@@ -1,0 +1,17 @@
+{
+  "name": "moonpaw-pet-tarot",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ร้านไพ่เหมียวจันทร์ — เว็บแอปดูดวงไพ่ยิปซีสำหรับสัตว์เลี้ยง (Kawaii Pastel Tarot)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:single": "vite build --mode single",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "vite-plugin-singlefile": "^2.0.0"
+  }
+}

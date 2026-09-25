@@ -1,0 +1,4 @@
+node_modules/
+work/npm-cache/
+work/npm-cache/_cacache/
+work/npm-cache/_logs/

@@ -1,0 +1,23 @@
+Moonpaw layout revision — 24 September 2026
+
+Updated art and layout:
+- Complete landscape and portrait room paintings; Madame Mochi is painted behind the table with paws on its edge.
+- Separate portrait shop painting for phones.
+- Art and object buttons share a single aspect-preserving coordinate system.
+- Journal, crystal ball and album targets use coordinates specific to each painting.
+- Removed old camera zooms and separate floating cat overlays.
+- Unified plum, cream and gold buttons, panels and navigation.
+- Adjusted short landscape card layout and resize ordering.
+- Existing dialogue, reading data, daily/monthly limits, journal and collection logic retained.
+
+Validation:
+- Normal static build and self-contained single-file build passed.
+- Desktop 1440x900 and phone 390x844 inspected visually.
+- Short landscape 844x390 inspected; card layout adjusted.
+- Door, crystal ball, journal and album object targets tested.
+- Fresh-session greeting and pet setup tested in standalone build.
+
+Generated using built-in image_gen. New asset prompts:
+1. Landscape 1536x1024 Moonpaw parlour: black kitten fortune teller seated behind table, front paws resting on edge; journal left, crystal ball near center-right, paw tarot album right; all important props fully visible; lavender, pink and gold storybook illustration; no text or UI.
+2. Portrait 1024x1536 recomposition of the landscape room, preserving kitten identity and matching art style, with all three interactive objects visible and naturally grounded on the table; no text or UI.
+3. Portrait 1024x1536 recomposition of the original shop facade, with cat-ear roof, gold paw crest, purple double door, glowing windows and lanterns, flowers and twilight town; full facade inside frame; no text or UI.
