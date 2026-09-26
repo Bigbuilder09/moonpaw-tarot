@@ -100,6 +100,13 @@ stage.innerHTML = `
   <label for="petName" class="field">ชื่อน้อง
     <input id="petName" maxlength="20" placeholder="เช่น ข้าวปั้น" autocomplete="off">
   </label>
+  <label for="petBirthday" class="field">วันเกิดน้อง
+    <input id="petBirthday" type="date" autocomplete="off">
+  </label>
+  <label for="ownerBirthday" class="field">วันเกิดเจ้าของ
+    <input id="ownerBirthday" type="date" autocomplete="off">
+  </label>
+  <p class="note" style="color:#7456B3;font-weight:600">✨ เร็วๆ นี้: ดูดวงสมพงษ์น้องกับเจ้าของ!</p>
   <button class="btn-primary" data-act="toHub" id="petCta">เข้าไปในร้าน</button>
   <button class="link-btn" data-act="reset" id="resetBtn">ล้างข้อมูลทั้งหมด</button>
 </div>
@@ -233,10 +240,16 @@ const ACT = {
   },
   editPet() { if (S.step !== 'pet' && S.step !== 'street') go('pet'); },
   pet(arg) { D.pet = arg; persist(); render(); },
-  toHub() { D.name = $('petName').value.trim(); D.met = true; persist(); go('hub'); },
+  toHub() {
+    D.name = $('petName').value.trim();
+    D.petBirthday = $('petBirthday').value;
+    D.ownerBirthday = $('ownerBirthday').value;
+    D.met = true; persist(); go('hub');
+  },
   reset() {
     if (!S.confirmReset) { S.confirmReset = true; render(); return; }
-    store.clear(); Object.assign(D, store.load()); $('petName').value = '';
+    store.clear(); Object.assign(D, store.load());
+    $('petName').value = ''; $('petBirthday').value = ''; $('ownerBirthday').value = '';
     go('street', { door: false, line: 0 });
   },
   goRead() { go('mode'); },
@@ -336,6 +349,8 @@ stage.addEventListener('click', (e) => {
 });
 $('petName').addEventListener('input', (e) => { D.name = e.target.value; $('chipName').textContent = dname(); });
 $('petName').addEventListener('keydown', (e) => { if (e.key === 'Enter') ACT.toHub(); });
+$('petBirthday').addEventListener('change', (e) => { D.petBirthday = e.target.value; });
+$('ownerBirthday').addEventListener('change', (e) => { D.ownerBirthday = e.target.value; });
 
 /* ------------------------------------------------------------------ render */
 function render() {
@@ -390,6 +405,10 @@ function render() {
   onoff($('petSheet'), s === 'pet');
   setHTML($('petGrid'), PETS.map((p) => `<button class="opt pet-opt${D.pet === p.k ? ' sel' : ''}" data-act="pet" data-arg="${p.k}" aria-pressed="${D.pet === p.k}">${petHTML(p.k, 52)}<span>${p.th}</span></button>`).join(''));
   if (s === 'pet' && document.activeElement !== $('petName')) $('petName').value = D.name || '';
+  if (s === 'pet') {
+    if (document.activeElement !== $('petBirthday')) $('petBirthday').value = D.petBirthday || '';
+    if (document.activeElement !== $('ownerBirthday')) $('ownerBirthday').value = D.ownerBirthday || '';
+  }
   $('petCta').textContent = D.met ? 'บันทึก' : 'เข้าไปในร้าน';
   $('resetBtn').style.display = D.met ? '' : 'none';
   $('resetBtn').textContent = S.confirmReset ? 'แตะอีกครั้งเพื่อยืนยันการล้างข้อมูล' : 'ล้างข้อมูลทั้งหมด';

@@ -5,6 +5,8 @@ const KEY = 'moonpaw.v1';
 export const DEFAULTS = {
   pet: 'cat',
   name: '',
+  petBirthday: '',
+  ownerBirthday: '',
   met: false,
   journal: [],   // [{ id, date, day, month, year, mode, key, bg, cards: [artKey] }]
   collected: [], // [artKey]
