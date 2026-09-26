@@ -415,3 +415,113 @@ h2{margin:0;font-size:24px;font-weight:700;line-height:1.25}
  .short .fan{bottom:65px}
 }
 #stage[data-step="shuffle"] .room{filter:brightness(.55) saturate(.7)}
+
+/* ================================================================ household, streak, rewards, share */
+.pet-tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 6px;margin:0 -2px;scrollbar-width:none}
+.pet-tabs:empty{display:none}
+.pet-tab{position:relative;flex-shrink:0;display:flex;align-items:center;gap:6px;height:42px;padding:0 14px 0 6px;border:1.5px solid #d8b987;border-radius:21px;background:#fff5e6;color:#61427d;font:600 13px 'Mali',cursive;box-shadow:0 3px 10px #26133018}
+.pet-tab span{max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pet-tab.sel{background:#74518e;color:#fff4df;border-color:#dfbd84}
+.pet-tab.add{padding:0 14px 0 10px;border-style:dashed;background:transparent;box-shadow:none}
+.wait-dot{position:absolute;top:1px;right:3px;width:10px;height:10px;border-radius:5px;background:#F6A04D;border:2px solid #fff5e6}
+.field-sub{font-weight:500;font-size:12px;color:var(--muted)}
+.bd-note{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--pink);text-align:left;color:#6B4A78}
+.bd-note svg{flex-shrink:0}
+
+.mode-row{position:relative;display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid #d9bb92;border-radius:20px;background:linear-gradient(145deg,#fffaef,#fbe6ee);text-align:left;color:var(--ink)}
+.mode-row.bday{background:linear-gradient(145deg,#fffaef,#fbeccd)}
+.mode-row.heart{background:linear-gradient(145deg,#fffaef,#e9e0f7)}
+.mode-ico{flex-shrink:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:22px;background:#fff;box-shadow:0 2px 8px #3a1d4a1a}
+.mode-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mode-txt b{font-size:16px}
+.mode-txt small{font-size:11.5px;line-height:1.35;color:var(--muted)}
+.mode-row.locked .mode-ico{filter:grayscale(.7);opacity:.7}
+.mode-row.locked b{color:#8a7a98}
+.mode-row.glow{border-color:#F0B955;box-shadow:0 0 0 3px #F6C45E66,0 0 22px #F6C45E88}
+
+.hint.toast{background:#FFF1CC!important;border-color:#F0B955!important}
+.streak-mini{display:inline-flex;align-items:center;gap:2px;margin-left:8px;padding:0 7px 0 3px;border-radius:10px;background:#ffffff22;color:#FFE08A;font-weight:700}
+.streak-mini svg{width:16px;height:16px}
+
+/* reward decorations drawn over the painted parlour */
+.deco{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.d-star{position:absolute;width:2.2%;aspect-ratio:1;background:#FFF3C4;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%);animation:twinkle 2.4s ease-in-out infinite}
+.d-petal{position:absolute;top:-6%;width:1.6%;aspect-ratio:1/1.4;border-radius:80% 0 80% 0;background:linear-gradient(135deg,#FFD9E4,#F29BB6);opacity:.9;animation:petal 8s linear infinite}
+@keyframes twinkle{0%,100%{opacity:.15}50%{opacity:1}}
+@keyframes petal{from{top:-6%;transform:translateX(0) rotate(0)}50%{transform:translateX(40px) rotate(260deg)}to{top:106%;transform:translateX(-10px) rotate(540deg)}}
+
+.streak-banner{display:flex;align-items:center;gap:12px;padding:12px 16px;border:2px solid #F6A04D;border-radius:20px;background:linear-gradient(135deg,#FFF1CC,#FFE1C4)}
+.streak-banner svg{width:34px;height:34px;flex-shrink:0}
+.streak-banner span{display:flex;flex-direction:column;gap:2px}
+.streak-banner b{font-size:16px}.streak-banner small{font-size:12.5px;color:var(--muted)}
+.new-cards.reward{border-color:#C9A2E6;background:linear-gradient(135deg,#F3E8FB,#FCE6EE)}
+.new-cards svg{flex-shrink:0}
+.btn-share{display:flex;align-items:center;justify-content:center;gap:12px;min-height:58px;padding:10px 18px;border:2px dashed #C9A2E6;border-radius:20px;background:#fff;color:#5B4488;text-align:left}
+.btn-share svg{width:24px;height:24px;flex-shrink:0}
+.btn-share span{display:flex;flex-direction:column;gap:1px}
+.btn-share b{font-size:16px}.btn-share small{font-size:11.5px;color:var(--muted)}
+
+.heart-talk{display:flex;align-items:flex-end;gap:10px}
+.heart-talk>svg{flex-shrink:0}
+.bubble{flex:1;padding:14px 16px;border:2px solid #EFE3F5;border-radius:20px 20px 20px 6px;background:#fff}
+.compat-box{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:22px;background:linear-gradient(135deg,#FCE6EE,#EEE3F5)}
+.compat-pair{display:flex;align-items:center;justify-content:center;gap:10px}
+.compat-heart svg{width:34px;height:34px}
+.owner-ico{display:flex}
+.compat-score{display:flex;align-items:baseline;justify-content:center;gap:10px;flex-wrap:wrap;text-align:center}
+.compat-score b{font:700 38px 'Mali',cursive;color:#8A3F74}
+.compat-score span{font:700 17px 'Mali',cursive}
+.sign-box{gap:4px;padding:12px}
+.sign-box b{font-size:14px;line-height:1.35}
+.bday-box{display:flex;gap:12px;align-items:center;padding:16px;border-radius:22px;background:linear-gradient(135deg,#FFF1CC,#FCE6EE)}
+.bday-box>svg{width:48px;height:48px;flex-shrink:0}
+
+.streak-box .row>svg{width:40px;height:40px;flex-shrink:0}
+.rewards{gap:0}
+.rewards .mid{margin-bottom:2px}
+.rewards>.muted{margin-bottom:6px;font-weight:500}
+.rw-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #F1E6F4}
+.rw-pic{flex-shrink:0;width:34px;display:flex;justify-content:center}
+.rw-pic.ico{height:34px;align-items:center;border-radius:17px;background:var(--lav)}
+.rw-pic.ico svg{width:22px;height:22px}
+.rw-txt{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+.rw-txt b{font-size:14px}.rw-txt small{font-size:11.5px;line-height:1.35;color:var(--muted)}
+.rw-btn{flex-shrink:0;height:34px;padding:0 12px;border:1.5px solid #d8b987;border-radius:17px;background:#fff5e6;color:#61427d;font:700 12px 'Mali',cursive}
+.rw-btn.on,.rw-on{background:#74518e;color:#fff4df;border-color:#dfbd84}
+.rw-on{flex-shrink:0;padding:7px 12px;border-radius:17px;font:700 12px 'Mali',cursive}
+.rw-lock{flex-shrink:0;padding:6px 10px;border-radius:12px;background:#F4EEF7;font-size:12px;font-weight:700;color:var(--muted)}
+.rw-item.locked .rw-pic{opacity:.45;filter:grayscale(.5)}
+
+.share-modal{z-index:9}
+.share-box{justify-content:flex-start}
+.share-img{display:block;max-width:100%;max-height:calc(100% - 150px);min-height:0;flex-shrink:1;object-fit:contain;border-radius:16px;box-shadow:0 8px 24px rgba(40,20,60,.35)}
+.share-actions{align-self:stretch}
+.share-actions .btn-primary{gap:6px}
+.share-wait{display:flex;flex-direction:column;align-items:center;gap:10px;margin:auto;text-align:center}
+.share-wait svg{width:40px;height:40px;animation:twinkle 1.2s ease-in-out infinite}
+/* leave room above the sheets for Madame's hint bubble (narrow screens) */
+#stage:not(.wide) .bottom-sheet{max-height:calc(100% - 132px)}
+#stage.short:not(.wide) .bottom-sheet{max-height:calc(100% - 104px)}
+.bottom-sheet>*{flex-shrink:0}
+
+/* ================================================================ install to home screen */
+.install-btn{font-weight:700;color:#FFE7B8}
+.install-btn svg{width:18px;height:18px}
+.install-card{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:14px 16px;border:2px solid #B9A0E0;border-radius:20px;background:linear-gradient(135deg,#F1E9FB,#FFF6E6)}
+.install-card>svg{width:34px;height:34px;flex-shrink:0}
+.install-card>span{flex:1;min-width:180px;display:flex;flex-direction:column;gap:2px}
+.install-card b{font-size:16px}.install-card small{font-size:12px;line-height:1.45;color:var(--muted)}
+.install-acts{display:flex;align-items:center;gap:6px;margin-left:auto}
+.install-acts .link-btn{min-height:36px}
+.install-modal{z-index:9}
+.install-box{top:auto!important;bottom:auto!important;top:50%!important;transform:translateY(-50%);max-height:calc(100% - 60px);gap:14px;text-align:center}
+.install-ico{width:84px;height:84px;border-radius:20px;box-shadow:0 6px 18px rgba(40,20,60,.3)}
+.install-box h2{font-size:22px}
+.steps{align-self:stretch;margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;text-align:left}
+.steps li{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:16px;background:#fff;font-size:14px;line-height:1.55}
+.steps li svg{vertical-align:-3px;color:#2F7BF6}
+.steps small{display:block;font-size:12px;color:var(--muted)}
+.step-n{flex-shrink:0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:#74518e;color:#fff4df;font:700 14px 'Mali',cursive}
+.install-box .notice{text-align:left;font-size:12.5px}
+/* cat / dog picker */
+.pet-grid .pet-opt{flex-direction:row;justify-content:center;gap:12px;padding:12px 10px;font-size:16px;font-weight:700;font-family:'Mali',cursive}
