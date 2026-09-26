@@ -1,9 +1,9 @@
 import './moonpaw.css';
 import './app.css';
-import exterior from './assets/shop-exterior.png';
-import exteriorPortrait from './assets/exterior-portrait.png';
-import interior from './assets/parlour-landscape.png';
-import interiorPortrait from './assets/parlour-portrait.png';
+import exterior from './assets/shop-exterior.webp';
+import exteriorPortrait from './assets/exterior-portrait.webp';
+import interior from './assets/parlour-landscape.webp';
+import interiorPortrait from './assets/parlour-portrait.webp';
 import { cardHTML, petHTML } from './card.js';
 import { ARTS, INFO, GROUP_ADV, POSITIONS, MAJOR, SUIT_TH, RANK_TH, RANK_NUM, PETS, LINES, PHASES } from './data.js';
 import * as store from './store.js';
@@ -11,10 +11,12 @@ import { ICON } from './icons.js';
 
 /* ------------------------------------------------------------------ state */
 const D = store.load(); // persisted: pet profile, journal, album, today's / this month's reading
+// repair older saves: a daily / monthly reading that was opened always belongs in the album
+[D.daily, D.monthly].forEach((r) => { if (r && r.arts) r.arts.forEach((a) => { if (!D.collected.includes(a)) D.collected.push(a); }); });
 const S = {             // session only
   step: 'street', door: false, entered: false, line: 0,
   mode: 'daily', deck: [], picks: [], arts: [], revs: [], flipped: [], dealt: false, readingId: '',
-  repeat: false, newCards: [], albumTab: 'major', detail: null, confirmReset: false
+  repeat: false, newCards: [], albumTab: 'major', detail: null, confirmReset: false, confirmUnsave: false
 };
 const persist = () => store.save(D);
 const timers = [];
@@ -138,9 +140,9 @@ stage.innerHTML = `
   </div>
   <button class="opt mode-btn celtic" data-act="celtic">
     <span class="celtic-art" aria-hidden="true">${[[22, 34], [22, 34, 1], [22, 68], [0, 34], [22, 0], [44, 34], [76, 72], [76, 48], [76, 24], [76, 0]].map((p) => `<i style="left:${p[0]}px;top:${p[1]}px${p[2] ? ';transform:rotate(90deg)' : ''}">${cardHTML('back', 19)}</i>`).join('')}</span>
-    <span class="celtic-text"><b>ดวงชะตารวม 10 ใบ</b><small>ผัง Celtic Cross ดูลึกทุกด้าน ตั้งแต่รากฐาน ใจกลาง จนถึงผลลัพธ์ · เปิดได้ทุกเมื่อ</small></span>
+    <span class="celtic-text"><b>ดวงชะตารวม 10 ใบ</b><small>ผัง Celtic Cross ดูลึกทุกด้าน ตั้งแต่รากฐาน ใจกลาง จนถึงผลลัพธ์ · เปิดได้ทุกเมื่อ (ไม่นับเข้าอัลบั้มไพ่)</small></span>
   </button>
-  <p class="note">ดวงรายวันเปิดได้วันละครั้ง รายเดือนเดือนละครั้ง · ดูดวงเพื่อความสนุก หากน้องไม่สบายควรพาไปพบสัตวแพทย์นะ</p>
+  <p class="note">ดวงรายวันเปิดได้วันละครั้ง รายเดือนเดือนละครั้ง ไพ่ที่ได้จะเข้าอัลบั้มและบันทึกลงสมุดดวงให้อัตโนมัติ · ดูดวงเพื่อความสนุก หากน้องไม่สบายควรพาไปพบสัตวแพทย์นะ</p>
 </div>
 
 <div id="shuffle" class="panel off full">
@@ -216,7 +218,7 @@ setInterval(tickCountdown, 1000);
 
 /* ------------------------------------------------------------------ flow */
 function go(step, extra) {
-  Object.assign(S, { step, entered: false, detail: null, confirmReset: false }, extra || {});
+  Object.assign(S, { step, entered: false, detail: null, confirmReset: false, confirmUnsave: false }, extra || {});
   render();
 }
 
@@ -290,21 +292,19 @@ const ACT = {
     S.flipped.push(k);
     const btn = document.querySelector(`[data-act="flip"][data-arg="${k}"]`);
     if (btn) btn.parentElement.classList.add('flipped');
-    if (S.flipped.length >= need()) {
-      if (S.mode === 'daily') { D.daily = { date: todayKey(), arts: S.arts.slice(), revs: S.revs.slice() }; persist(); }
-      if (S.mode === 'monthly') { D.monthly = { month: monthKey(), arts: S.arts.slice(), revs: S.revs.slice() }; persist(); }
-    }
+    if (S.flipped.length === need()) completeReading();
     render();
   },
   toResult() {
-    const fresh = S.arts.filter((a) => !D.collected.includes(a));
-    D.collected = D.collected.concat(fresh); persist();
-    go('result', { newCards: fresh, repeat: false });
+    go('result', { newCards: S.newCards.slice(), repeat: false });
   },
   save() {
+    // readings are saved automatically; removing one needs a second tap
     const id = entryId();
-    if (D.journal.some((e) => e.id === id)) D.journal = D.journal.filter((e) => e.id !== id);
-    else D.journal = [makeEntry()].concat(D.journal);
+    const saved = D.journal.some((e) => e.id === id);
+    if (!saved) { D.journal = [makeEntry()].concat(D.journal); S.confirmUnsave = false; }
+    else if (!S.confirmUnsave) S.confirmUnsave = true;
+    else { D.journal = D.journal.filter((e) => e.id !== id); S.confirmUnsave = false; }
     persist(); render();
   },
   celtic() { choose('celtic'); },
@@ -327,6 +327,19 @@ function choose(mode) {
   }
   go('shuffle', { mode, readingId, deck: shuffle(ARTS), picks: [], arts: [], revs: [], flipped: [], dealt: false, repeat: false, newCards: [] });
   later(() => { S.dealt = true; render(); }, 380);
+}
+
+/** Runs once, the moment the last card of a reading is turned over: everything is saved
+ *  right away, so leaving the screen early never loses the reading or its cards. */
+function completeReading() {
+  if (S.mode === 'daily') D.daily = { date: todayKey(), arts: S.arts.slice(), revs: S.revs.slice() };
+  if (S.mode === 'monthly') D.monthly = { month: monthKey(), arts: S.arts.slice(), revs: S.revs.slice() };
+  // only the once-per-period readings fill the album; the ten-card spread can be opened any time
+  const fresh = S.mode === 'celtic' ? [] : S.arts.filter((a) => !D.collected.includes(a));
+  D.collected = D.collected.concat(fresh);
+  S.newCards = fresh;
+  if (!D.journal.some((e) => e.id === entryId())) D.journal = [makeEntry()].concat(D.journal);
+  persist();
 }
 
 const entryId = () => S.readingId;
@@ -475,7 +488,7 @@ function render() {
   const saveBtn = $('saveBtn');
   if (saveBtn) {
     const isSaved = D.journal.some((e) => e.id === entryId());
-    saveBtn.innerHTML = (isSaved ? ICON.check : '') + (isSaved ? 'บันทึกลงสมุดดวงแล้ว' : 'บันทึกลงสมุดดวง');
+    saveBtn.innerHTML = !isSaved ? 'บันทึกลงสมุดดวง' : S.confirmUnsave ? 'แตะอีกครั้งเพื่อลบออกจากสมุดดวง' : ICON.check + 'บันทึกในสมุดดวงแล้ว';
     saveBtn.setAttribute('aria-pressed', isSaved);
   }
   onoff($('journal'), s === 'journal');
@@ -551,7 +564,8 @@ function resultHTML() {
         <div class="owner-tip"><b>คำแนะนำสำหรับเจ้าของ · ${P[k][4]}</b><div>${x.adv}</div></div>
       </section>`).join('')}
       ${statsHTML(rs)}${luckyHTML(last)}
-      ${adviceHTML('มาดามโมจิสรุปให้', last.adv)}`;
+      ${adviceHTML('มาดามโมจิสรุปให้', last.adv)}
+      <p class="note">ไพ่จากดวงชะตารวมไม่นับเข้าอัลบั้ม สะสมไพ่ได้จากดวงรายวันและรายเดือนนะจ๊ะ</p>`;
   }
   return `<div class="res">
     <div><div class="muted">${title}</div>
@@ -594,7 +608,7 @@ function albumHTML() {
     <div class="handle"></div>
     <h2>อัลบั้มไพ่สะสม</h2>
     <div class="row"><div class="track grow"><div class="bar" style="width:${Math.round(D.collected.length / 78 * 100)}%;background:#F0B955"></div></div><b class="small-b">${D.collected.length}/78</b></div>
-    <div class="muted">ไพ่ที่เปิดได้จะเข้าอัลบั้มอัตโนมัติ · แตะไพ่ที่ปลดล็อกเพื่อดูความหมาย</div>
+    <div class="muted">สะสมไพ่ได้จากดวงรายวันและรายเดือน · แตะไพ่ที่ปลดล็อกเพื่อดูความหมาย</div>
     <div class="tabs">${TABS.map((t) => { const it = items(t[0]); return `<button class="tab${S.albumTab === t[0] ? ' sel' : ''}" data-act="tab" data-arg="${t[0]}" aria-pressed="${S.albumTab === t[0]}">${t[1]}<small>${it.filter((r) => has(r.art)).length}/${it.length}</small></button>`; }).join('')}</div>
     <div class="album-grid">${items(S.albumTab).map((r) => has(r.art)
       ? `<div class="album-item"><button class="card-btn opt pop" data-act="open" data-arg="${r.art}" aria-label="ดูความหมาย ${r.name}">${cardHTML(r.art, 72)}</button><span>${r.num} · ${r.name}</span></div>`
