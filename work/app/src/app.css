@@ -525,3 +525,16 @@ h2{margin:0;font-size:24px;font-weight:700;line-height:1.25}
 .install-box .notice{text-align:left;font-size:12.5px}
 /* cat / dog picker */
 .pet-grid .pet-opt{flex-direction:row;justify-content:center;gap:12px;padding:12px 10px;font-size:16px;font-weight:700;font-family:'Mali',cursive}
+
+/* ================================================================ music toggle + sheet close */
+.hud-right{display:flex;align-items:center;gap:6px;min-width:0}
+.music-btn{flex-shrink:0;width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;border:1.5px solid #d8b98799;border-radius:16px;background:#513268d9;color:#FFE7B8;box-shadow:0 3px 10px #26133022;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.music-btn.off{color:#bfa9cf;background:#3b2650cc}
+.music-btn[hidden]{display:none}
+.street-music{position:absolute;top:max(14px,env(safe-area-inset-top,0px));right:14px;z-index:6}
+@media(max-width:639px){.music-btn{width:30px;height:30px}.hud-right .pet-chip{max-width:118px}}
+.sheet-close{position:sticky;top:10px;align-self:flex-end;z-index:4;flex-shrink:0;width:36px;height:36px;margin:-12px -6px -36px 0;padding:0;display:flex;align-items:center;justify-content:center;border:1.5px solid #e2cfb4;border-radius:18px;background:#fff8eef2;color:#6B4E82;box-shadow:0 3px 10px #3a1d4a22}
+.sheet-close[hidden]{display:none}
+.sheet-close:active{transform:scale(.92)}
+.sheet-head{padding-right:40px}
+.res-head{padding-right:40px}

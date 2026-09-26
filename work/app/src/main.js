@@ -143,8 +143,13 @@ stage.innerHTML = `
 <div id="hud" class="panel off hud">
   <button class="round-btn" data-act="back" id="backBtn" aria-label="ย้อนกลับ">${ICON.back}</button>
   <div id="hudMid"></div>
-  <button class="pet-chip" data-act="editPet" aria-label="แก้ไขข้อมูลน้อง"><span id="chipFace"></span><span id="chipName"></span></button>
+  <div class="hud-right">
+    <button class="music-btn" data-act="music" aria-label="เปิดหรือปิดเพลง"></button>
+    <button class="pet-chip" data-act="editPet" aria-label="แก้ไขข้อมูลน้อง"><span id="chipFace"></span><span id="chipName"></span></button>
+  </div>
 </div>
+<button class="music-btn street-music" data-act="music" aria-label="เปิดหรือปิดเพลง"></button>
+<audio id="bgm" loop preload="none" src="./moonpetalmedia-parlor-of-secrets-vintage-witchy-tarot-instrumental-537898.mp3"></audio>
 
 <div id="hint" class="panel off hint">${ICON.ball}<div id="hintText"></div></div>
 
@@ -157,8 +162,9 @@ stage.innerHTML = `
 </div>
 
 <div id="petSheet" class="panel sheet off bottom-sheet">
+  <button class="sheet-close" id="petClose" data-act="back" aria-label="ปิด">${ICON.close}</button>
   <div class="handle"></div>
-  <h2 id="petTitle">น้องคือใครเอ่ย?</h2>
+  <h2 id="petTitle" class="sheet-head">น้องคือใครเอ่ย?</h2>
   <div id="petTabs" class="pet-tabs"></div>
   <div id="petGrid" class="grid2 pet-grid"></div>
   <label for="petName" class="field">ชื่อน้อง
@@ -185,8 +191,9 @@ stage.innerHTML = `
 </div>
 
 <div id="modeSheet" class="panel sheet off bottom-sheet">
+  <button class="sheet-close" data-act="back" aria-label="ปิด">${ICON.close}</button>
   <div class="handle"></div>
-  <h2>จะดูดวงแบบไหนดี?</h2>
+  <h2 class="sheet-head">จะดูดวงแบบไหนดี?</h2>
   <div id="modePets" class="pet-tabs"></div>
   <div class="grid2">
     <button class="opt mode-btn daily" data-act="daily">
@@ -363,6 +370,7 @@ const ACT = {
   installClose() { S.install = null; render(); },
   installLater() { D.installSnooze = todayKey(); persist(); render(); },
   openBrowser() { openExternal(); },
+  music() { D.music = !musicOn(); persist(); syncMusic(); },
   door() {
     if (S.step !== 'street' || S.door) return;
     S.door = true; render();
@@ -631,6 +639,7 @@ function render() {
   $('street').classList.toggle('gone', s !== 'street');
   onoff($('streetCta'), s === 'street' && !S.door);
   $('installBtn').hidden = !installKind();
+  document.querySelector('.street-music').hidden = s !== 'street';
   $('doorL').classList.toggle('open', S.door);
   $('doorR').classList.toggle('open', S.door);
   $('room').className = 'layer room ' + ({ street: 'hidden', shuffle: 'table', reveal: 'table dim', result: 'dim', journal: 'shelfL', album: 'shelfR' }[s] || 'wide');
@@ -688,6 +697,7 @@ function render() {
   setHTML($('petTabs'), D.met ? petTabsHTML(true) : '');
   setHTML($('petGrid'), PETS.map((k) => `<button class="opt pet-opt${p.pet === k.k ? ' sel' : ''}" data-act="pet" data-arg="${k.k}" aria-pressed="${p.pet === k.k}">${petHTML(k.k, 64)}<span>${k.th}</span></button>`).join(''));
   $('petCta').textContent = D.met ? 'บันทึก' : 'เข้าไปในร้าน';
+  $('petClose').hidden = !D.met;
   $('removeBtn').style.display = D.met && D.pets.length > 1 ? '' : 'none';
   $('removeBtn').textContent = S.confirmRemove ? `แตะอีกครั้งเพื่อลบน้อง${dname()} และสมุดดวงของน้อง` : `ลบน้อง${dname()}ออกจากบ้าน`;
   $('resetBtn').style.display = D.met ? '' : 'none';
@@ -900,7 +910,8 @@ function resultHTML() {
   const streakBanner = S.streakUp ? `<div class="pop streak-banner">${ICON.flame}<span><b>${S.streakUp > 1 ? `มาหามาดามต่อเนื่อง ${S.streakUp} วัน!` : 'เริ่มนับวันแรกแล้ว! พรุ่งนี้มาต่อนะ'}</b><small>เปิดไพ่รายวันมาแล้ว ${D.streak.days} วัน${nr ? ` · อีก ${nr.days - D.streak.days} วันได้ “${nr.name}”` : ''}</small></span></div>` : '';
   const rewardBanner = S.newRewards.length ? `<button class="pop new-cards reward" data-act="goJournal">${ICON.gift}<span><b>ปลดล็อกรางวัลใหม่!</b><small>${S.newRewards.map((r) => r.name).join(' · ')} · แตะเพื่อดูในสมุดดวง</small></span></button>` : '';
   return `<div class="res">
-    <div><div class="muted">${resultTitle(d)}</div>
+    <button class="sheet-close" data-act="back" aria-label="ปิด">${ICON.close}</button>
+    <div class="res-head"><div class="muted">${resultTitle(d)}</div>
     <h2>${h2}</h2></div>
     ${repeat}${streakBanner}${rewardBanner}
     ${S.newCards.length ? `<button class="pop new-cards" data-act="goAlbum"><svg class="shine" width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 3 Q18 18 33 18 Q18 18 18 33 Q18 18 3 18 Q18 18 18 3Z" fill="#F0B955" stroke="#6B5577" stroke-width="2" stroke-linejoin="round"/></svg><span><b>ได้ไพ่ใหม่เข้าอัลบั้ม +${S.newCards.length}</b><small>สะสมแล้ว ${D.collected.length}/78 ใบ · แตะเพื่อดูอัลบั้ม</small></span></button>` : ''}
@@ -912,6 +923,29 @@ function resultHTML() {
     <p class="note">คำทำนายเพื่อความบันเทิง หากน้องมีอาการผิดปกติควรปรึกษาสัตวแพทย์</p>
   </div>`;
 }
+
+/* ------------------------------------------------------------------ background music */
+// On by default. Browsers only allow sound after a tap, so it starts on the first tap in the game
+// (usually the shop door). The choice is remembered, and the music pauses while the app is hidden.
+const bgm = document.getElementById('bgm');
+bgm.volume = 0.25;
+const musicOn = () => D.music !== false;
+let heard = false; // has the player tapped anything yet
+function syncMusic() {
+  const play = musicOn() && heard && !document.hidden;
+  if (play && bgm.paused) bgm.play().catch(() => {});
+  if (!play && !bgm.paused) bgm.pause();
+  document.querySelectorAll('.music-btn').forEach((b) => {
+    b.innerHTML = musicOn() ? ICON.soundOn : ICON.soundOff;
+    b.classList.toggle('off', !musicOn());
+    b.setAttribute('aria-pressed', String(musicOn()));
+    b.title = musicOn() ? 'ปิดเพลง' : 'เปิดเพลง';
+  });
+}
+stage.addEventListener('pointerdown', () => { if (!heard) { heard = true; syncMusic(); } }, { capture: true });
+document.addEventListener('keydown', () => { if (!heard) { heard = true; syncMusic(); } });
+document.addEventListener('visibilitychange', syncMusic);
+syncMusic();
 
 /* ------------------------------------------------------------------ install (PWA) */
 // shown under a finished reading, at most once every 3 days after "ไว้ทีหลัง"
@@ -1031,8 +1065,9 @@ function journalHTML() {
   for (let dd = 1; dd <= days; dd++) cal += `<span class="day${dd === today ? ' today' : ''}${marked[dd] ? ' marked' : ''}">${dd}</span>`;
   const tabs = petTabsHTML(false);
   return `<div class="sheet-body">
+    <button class="sheet-close" data-act="back" aria-label="ปิด">${ICON.close}</button>
     <div class="handle"></div>
-    <div class="row between"><h2>สมุดดวงของน้อง${esc(dname())}</h2><span class="chip pink">${p.journal.length} บันทึก</span></div>
+    <div class="row between sheet-head"><h2>สมุดดวงของน้อง${esc(dname())}</h2><span class="chip pink">${p.journal.length} บันทึก</span></div>
     ${tabs ? `<div class="pet-tabs">${tabs}</div>` : ''}
     ${rewardsHTML()}
     <div class="box"><div class="mid">${thDate(d, { month: 'long', year: 'numeric' }, '')}</div>
@@ -1049,8 +1084,9 @@ function albumHTML() {
     : RANK_TH.map((rt, i) => ({ num: RANK_NUM[i], name: i < 10 ? (i === 0 ? 'เอซ' : rt) + SUIT_TH[t] : rt, art: t + (i + 1) }));
   const has = (a) => D.collected.includes(a);
   return `<div class="sheet-body">
+    <button class="sheet-close" data-act="back" aria-label="ปิด">${ICON.close}</button>
     <div class="handle"></div>
-    <h2>อัลบั้มไพ่สะสม</h2>
+    <h2 class="sheet-head">อัลบั้มไพ่สะสม</h2>
     <div class="row"><div class="track grow"><div class="bar" style="width:${Math.round(D.collected.length / 78 * 100)}%;background:#F0B955"></div></div><b class="small-b">${D.collected.length}/78</b></div>
     <div class="muted">สะสมไพ่ได้จากดวงรายวันและรายเดือน · แตะไพ่ที่ปลดล็อกเพื่อดูความหมาย</div>
     <div class="tabs">${TABS.map((t) => { const it = items(t[0]); return `<button class="tab${S.albumTab === t[0] ? ' sel' : ''}" data-act="tab" data-arg="${t[0]}" aria-pressed="${S.albumTab === t[0]}">${t[1]}<small>${it.filter((r) => has(r.art)).length}/${it.length}</small></button>`; }).join('')}</div>
