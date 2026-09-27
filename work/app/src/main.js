@@ -17,7 +17,7 @@ import { initInstall, installKind, promptInstall, openExternal, askedExternal, i
 const D = store.load(); // persisted: household (pets + their readings/journals), shared album, streak, rewards
 const S = {             // session only
   step: 'street', door: false, entered: false, line: 0, lines: LINES,
-  mode: 'daily', deck: [], picks: [], arts: [], revs: [], flipped: [], dealt: false, readingId: '',
+  mode: 'daily', deck: [], picks: [], arts: [], revs: [], flipped: [], dealt: false, sealed: false, gen: 0, readingId: '',
   repeat: false, newCards: [], newRewards: [], streakUp: 0, albumTab: 'major', detail: null,
   confirmReset: false, confirmUnsave: false, confirmRemove: false, toast: '', share: null, install: null
 };
@@ -436,27 +436,35 @@ const ACT = {
   heart() { choose('heart'); },
   pick(arg) {
     const i = Number(arg);
-    if (S.step !== 'shuffle' || !S.dealt || S.picks.includes(i) || S.picks.length >= need()) return;
+    if (S.step !== 'shuffle' || !S.dealt || S.sealed || S.picks.includes(i) || S.picks.length >= need()) return;
     const pos = S.picks.length;
     S.picks.push(i); S.arts.push(S.deck[i]);
     // position 2 of the ten-card spread is always read upright (per the source book);
     // birthday cards are a blessing, so they are always read upright too
     S.revs.push((S.mode === 'celtic' && pos === 1) || S.mode === 'bday' ? false : Math.random() < REV_CHANCE);
     render();
-    if (S.picks.length === need()) later(() => go('reveal', { flipped: [] }), 950);
+    if (S.picks.length === need()) {
+      // all cards chosen: lock the table so "สับไพ่ใหม่" can't clear the picks before the reveal
+      S.sealed = true; render();
+      const g = S.gen;
+      later(() => { if (S.step === 'shuffle' && S.gen === g) go('reveal', { flipped: [] }); }, 950);
+    }
   },
   autoPick() {
-    if (S.step !== 'shuffle' || !S.dealt) return;
+    if (S.step !== 'shuffle' || !S.dealt || S.sealed) return;
+    const g = S.gen;
     const count = S.mode === 'celtic' ? 78 : 9;
     const free = shuffle([...Array(count).keys()].filter((i) => !S.picks.includes(i))).slice(0, need() - S.picks.length);
-    free.forEach((i, j) => later(() => ACT.pick(i), j * 140));
+    free.forEach((i, j) => later(() => { if (S.gen === g) ACT.pick(i); }, j * 140));
   },
   flipAll() {
     S.arts.forEach((_, k) => later(() => ACT.flip(k), k * 160));
   },
   reshuffle() {
+    if (S.step !== 'shuffle' || S.sealed) return;
+    const g = ++S.gen; // cancels any auto-pick still on its way
     S.dealt = false; S.picks = []; S.arts = []; S.revs = []; render();
-    later(() => { S.deck = shuffle(ARTS); S.dealt = true; render(); }, 520);
+    later(() => { if (S.gen === g && S.step === 'shuffle') { S.deck = shuffle(ARTS); S.dealt = true; render(); } }, 520);
   },
   flip(arg) {
     const k = Number(arg);
@@ -556,7 +564,7 @@ function choose(mode) {
     go('result', { mode, readingId, arts: done.arts.slice(), revs: (done.revs || []).slice(), repeat: true, newCards: [], newRewards: [], streakUp: 0 });
     return;
   }
-  go('shuffle', { mode, readingId, deck: shuffle(ARTS), picks: [], arts: [], revs: [], flipped: [], dealt: false, repeat: false, newCards: [], newRewards: [], streakUp: 0 });
+  go('shuffle', { mode, readingId, deck: shuffle(ARTS), picks: [], arts: [], revs: [], flipped: [], dealt: false, sealed: false, gen: S.gen + 1, repeat: false, newCards: [], newRewards: [], streakUp: 0 });
   later(() => { S.dealt = true; render(); }, 380);
 }
 
@@ -744,6 +752,7 @@ function render() {
     b.style.transitionDelay = (S.dealt ? i * 40 : (fanCount - 1 - i) * 22) + 'ms';
   });
   $('autoBtn').style.display = n === 10 ? '' : 'none';
+  document.querySelectorAll('#shuffle [data-act="reshuffle"], #autoBtn').forEach((b) => { b.disabled = !!S.sealed; });
   $('fan').style.display = n === 10 ? 'none' : '';
   $('deck78').style.display = n === 10 ? '' : 'none';
   if (n === 10) layoutDeck78();
