@@ -1,6 +1,6 @@
-// Moonpaw offline support: the shop opens even without internet once it has been visited.
+// SOULMYSTY offline support: the shop opens even without internet once it has been visited.
 // Bump CACHE when you want every installed copy to drop its old files.
-const CACHE = 'moonpaw-v2';
+const CACHE = 'soulmysty-v3';
 const CORE = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

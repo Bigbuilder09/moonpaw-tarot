@@ -49,6 +49,13 @@ function clampLines(ctx, lines, max) {
   out[max - 1] = last.slice(0, Math.max(1, last.length - 2)) + '…';
   return out;
 }
+// Draws text centred on cx without relying on ctx.textAlign — iOS Safari sometimes ignores
+// textAlign='center' after letterSpacing is changed, which pushed every line to the right.
+function fillC(ctx, text, cx, y) {
+  text = String(text);
+  ctx.textAlign = 'left';
+  ctx.fillText(text, cx - ctx.measureText(text).width / 2, y);
+}
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -97,22 +104,24 @@ function draw(opts, cardImgs, pet, backdrop) {
   ov.addColorStop(0, 'rgba(38,22,56,.78)'); ov.addColorStop(.45, 'rgba(38,22,56,.55)'); ov.addColorStop(1, 'rgba(30,16,44,.9)');
   ctx.fillStyle = ov; ctx.fillRect(0, 0, W, H);
 
-  ctx.textAlign = 'center';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
   // header
   ctx.fillStyle = '#E9C88F';
   ctx.font = "400 28px 'Young Serif', Georgia, serif";
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '8px';
-  ctx.fillText('MOONPAW TAROT PARLOUR', W / 2, 118);
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  // letter-spaced by hand (ctx.letterSpacing is what upsets textAlign on iOS)
+  const brand = [...'SOULMYSTY TAROT PARLOUR'], sp = 8;
+  const bw = brand.reduce((t, ch) => t + ctx.measureText(ch).width, 0) + sp * (brand.length - 1);
+  let bx = (W - bw) / 2;
+  brand.forEach((ch) => { ctx.fillText(ch, bx, 118); bx += ctx.measureText(ch).width + sp; });
   ctx.fillStyle = '#FFF1DA';
   ctx.font = "700 64px 'Mali', cursive";
   const titleLines = clampLines(ctx, wrap(ctx, opts.title, 920), 2);
   let y = 205;
-  titleLines.forEach((l) => { ctx.fillText(l, W / 2, y); y += 78; });
+  titleLines.forEach((l) => { fillC(ctx, l, W / 2, y); y += 78; });
   ctx.fillStyle = '#EADAF0';
   ctx.font = "400 34px 'IBM Plex Sans Thai Looped', sans-serif";
-  ctx.fillText(opts.date || '', W / 2, y - 12);
+  fillC(ctx, opts.date || '', W / 2, y - 12);
 
   // measure the text panel first, then give the cards whatever height is left
   const px = 70, pw = W - 140;
@@ -154,7 +163,7 @@ function draw(opts, cardImgs, pet, backdrop) {
       ctx.fillStyle = 'rgba(255,246,232,.94)';
       roundRect(ctx, x + cw / 2 - tw / 2, top + ch + 26, tw, 50, 25); ctx.fill();
       ctx.fillStyle = '#5B3F78';
-      ctx.fillText(c.label, x + cw / 2, top + ch + 62);
+      fillC(ctx, c.label, x + cw / 2, top + ch + 62);
     }
   });
 
@@ -169,24 +178,24 @@ function draw(opts, cardImgs, pet, backdrop) {
   if (pet) ctx.drawImage(pet, W / 2 - 46, pTop - 46, 92, 92);
   ctx.fillStyle = '#7A5A98';
   ctx.font = "600 32px 'Mali', cursive";
-  ctx.fillText('น้อง' + opts.petName, W / 2, pTop + 108);
+  fillC(ctx, 'น้อง' + opts.petName, W / 2, pTop + 108);
 
   let ty = pTop + 180;
   ctx.fillStyle = '#43305A';
   ctx.font = "700 52px 'Mali', cursive";
-  head.forEach((l) => { ctx.fillText(l, W / 2, ty); ty += 66; });
+  head.forEach((l) => { fillC(ctx, l, W / 2, ty); ty += 66; });
   ty += 14;
   ctx.fillStyle = '#5E4B72';
   ctx.font = "400 34px 'IBM Plex Sans Thai Looped', sans-serif";
-  bodyLines.forEach((l) => { if (l) ctx.fillText(l, W / 2, ty); ty += l ? lh : lh * 0.5; });
+  bodyLines.forEach((l) => { if (l) fillC(ctx, l, W / 2, ty); ty += l ? lh : lh * 0.5; });
 
   // footer
   ctx.fillStyle = '#F1D5A2';
   ctx.font = "700 36px 'Mali', cursive";
-  ctx.fillText('ร้านไพ่เหมียวจันทร์', W / 2, H - 84);
+  fillC(ctx, 'ร้านไพ่ SOULMYSTY', W / 2, H - 84);
   ctx.fillStyle = '#D9C6E6';
   ctx.font = "400 26px 'IBM Plex Sans Thai Looped', sans-serif";
-  ctx.fillText(opts.footer || 'ดูดวงไพ่ยิปซีให้น้องเจ้าตัวเล็ก', W / 2, H - 40);
+  fillC(ctx, opts.footer || 'ดูดวงไพ่ยิปซีให้น้องเจ้าตัวเล็ก', W / 2, H - 40);
 
   return new Promise((ok, fail) => {
     try { cv.toBlob((b) => (b ? ok(b) : fail(new Error('blob'))), 'image/png'); } catch (e) { fail(e); }

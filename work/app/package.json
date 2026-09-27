@@ -1,8 +1,8 @@
 {
-  "name": "moonpaw-pet-tarot",
+  "name": "soulmysty-pet-tarot",
   "private": true,
   "version": "1.0.0",
-  "description": "ร้านไพ่เหมียวจันทร์ — เว็บแอปดูดวงไพ่ยิปซีสำหรับสัตว์เลี้ยง (Kawaii Pastel Tarot)",
+  "description": "ร้านไพ่ SOULMYSTY — เว็บแอปดูดวงไพ่ยิปซีสำหรับสัตว์เลี้ยง (Kawaii Pastel Tarot)",
   "type": "module",
   "scripts": {
     "dev": "vite",

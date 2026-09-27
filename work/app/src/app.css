@@ -538,3 +538,6 @@ h2{margin:0;font-size:24px;font-weight:700;line-height:1.25}
 .sheet-close:active{transform:scale(.92)}
 .sheet-head{padding-right:40px}
 .res-head{padding-right:40px}
+.mode-row .soon-tag{position:absolute;top:-9px;right:12px;padding:2px 9px;border-radius:999px;background:#7456B3;color:#FFF6E6;font:600 11px 'Mali',cursive;letter-spacing:.3px;box-shadow:0 2px 0 #56408A}
+.mode-row.soon{opacity:.82}
+.mode-row.soon small{color:#8a7a98}

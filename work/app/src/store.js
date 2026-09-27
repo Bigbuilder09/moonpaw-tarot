@@ -1,6 +1,7 @@
 // Tiny persistence layer. Everything lives in this browser only (localStorage).
 // Swap load/save for an API call when the app gets a backend.
-const KEY = 'moonpaw.v1';
+const KEY = 'soulmysty.v1';
+const OLD_KEY = 'moonpaw.v1'; // saves from before the rename are picked up once
 
 let seq = 0;
 const newId = () => 'p' + Date.now().toString(36) + (seq++).toString(36);
@@ -55,7 +56,7 @@ function migrate(o) {
 export function load() {
   let data;
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY) || localStorage.getItem(OLD_KEY);
     data = raw ? migrate(JSON.parse(raw)) : {};
   } catch (e) {
     data = {};
@@ -78,5 +79,5 @@ export function save(data) {
 }
 
 export function clear() {
-  try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
+  try { localStorage.removeItem(KEY); localStorage.removeItem(OLD_KEY); } catch (e) { /* ignore */ }
 }

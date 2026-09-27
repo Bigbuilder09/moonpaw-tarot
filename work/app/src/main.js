@@ -1,4 +1,4 @@
-import './moonpaw.css';
+import './soulmysty.css';
 import './app.css';
 import exterior from './assets/shop-exterior.webp';
 import exteriorPortrait from './assets/exterior-portrait.webp';
@@ -120,7 +120,7 @@ stage.innerHTML = `
 </div>
 
 <div id="street" class="layer street">
-  <img id="streetArt" class="painted-street" src="${exterior}" alt="ร้านไพ่เหมียวจันทร์ แสงโคมอุ่นในยามค่ำ" fetchpriority="high">
+  <img id="streetArt" class="painted-street" src="${exterior}" alt="ร้านไพ่ SOULMYSTY แสงโคมอุ่นในยามค่ำ" fetchpriority="high">
   <button class="door-btn" data-act="door" aria-label="เปิดประตูเข้าร้าน">
     <span class="door-glow"></span>
     <span id="doorL" class="door-l"><i class="dp dp1"></i><i class="dp dp2"></i></span>
@@ -130,12 +130,12 @@ stage.innerHTML = `
 </div>
 </div>
   <div id="streetTitle" class="street-title">
-    <div class="eyebrow">MOONPAW TAROT PARLOUR</div>
+    <div class="eyebrow">SOULMYSTY TAROT PARLOUR</div>
     <h1>ดูดวงไพ่ยิปซี<br>ให้น้องเจ้าตัวเล็ก</h1>
     <p>ร้านเปิดแล้ว… มาดามโมจิรออยู่ข้างใน</p>
-    <div class="shop-name">ร้านไพ่เหมียวจันทร์ <span>MOONPAW TAROT</span></div>
+    <div class="shop-name">ร้านไพ่ SOULMYSTY <span>PET TAROT</span></div>
   </div>
-<div id="streetCta" class="panel on street-cta"><button class="btn-primary pulse" data-act="door">${ICON.paw} เข้าร้านดูดวง</button><button id="installBtn" class="dl-btn install-btn" data-act="install" hidden>${ICON.phone} ติดตั้งร้านไว้บนหน้าจอ</button><button id="dlBtn" class="dl-btn" data-act="download" hidden>${ICON.dl} ดาวน์โหลดไว้เล่นในเครื่อง</button></div>
+<div id="streetCta" class="panel on street-cta"><button class="btn-primary pulse" data-act="door">${ICON.paw} เข้าร้านดูดวง</button><button id="installBtn" class="dl-btn install-btn" data-act="install" hidden>${ICON.phone} ติดตั้งร้านไว้บนหน้าจอ</button></div>
 
 <div id="flash"></div>
 <div id="veil" class="veil off"></div>
@@ -176,7 +176,7 @@ stage.innerHTML = `
   <label for="ownerBirthday" class="field">วันเกิดเจ้าของ <small class="field-sub">ใช้กับน้องทุกตัว</small>
     <input id="ownerBirthday" type="date" autocomplete="off">
   </label>
-  <p class="note bd-note">${ICON.cake}ใส่วันเกิดเพื่อปลดล็อก “ดวงสมพงษ์น้องกับเจ้าของ” และ “ดวงวันเกิดน้อง” แล้วมาดามจะอวยพรให้ในวันเกิดด้วยนะ</p>
+  <p class="note bd-note">${ICON.cake}ใส่วันเกิดไว้ แล้วมาดามจะอวยพรให้ในวันเกิดนะ · “ดวงสมพงษ์” และ “ดวงวันเกิด” เปิดให้เร็ว ๆ นี้</p>
   <button class="btn-primary" data-act="toHub" id="petCta">เข้าไปในร้าน</button>
   <button class="link-btn" data-act="removePet" id="removeBtn">ลบน้องตัวนี้</button>
   <button class="link-btn" data-act="reset" id="resetBtn">ล้างข้อมูลทั้งหมด</button>
@@ -214,8 +214,8 @@ stage.innerHTML = `
     <span class="celtic-text"><b>ดวงชะตารวม 10 ใบ</b><small>ผัง Celtic Cross ดูลึกทุกด้าน ตั้งแต่รากฐาน ใจกลาง จนถึงผลลัพธ์ · เปิดได้ทุกเมื่อ (ไม่นับเข้าอัลบั้มไพ่)</small></span>
   </button>
   <div class="grid2">
-    <button class="opt mode-row compat" data-act="compat" id="compatBtn"><span class="mode-ico">${ICON.hearts}</span><span class="mode-txt"><b>ดวงสมพงษ์</b><small id="compatSub"></small></span></button>
-    <button class="opt mode-row bday" data-act="bday" id="bdayBtn"><span class="mode-ico">${ICON.cake}</span><span class="mode-txt"><b>ดวงวันเกิด</b><small id="bdaySub"></small></span></button>
+    <button class="opt mode-row compat" data-act="compat" id="compatBtn"><span class="mode-ico">${ICON.hearts}</span><span class="mode-txt"><b>ดวงสมพงษ์</b><small id="compatSub"></small><span class="soon-tag">Coming soon</span></span></button>
+    <button class="opt mode-row bday" data-act="bday" id="bdayBtn"><span class="mode-ico">${ICON.cake}</span><span class="mode-txt"><b>ดวงวันเกิด</b><small id="bdaySub"></small><span class="soon-tag">Coming soon</span></span></button>
   </div>
   <button class="opt mode-row heart" data-act="heart" id="heartBtn"><span class="mode-ico">${ICON.bubble}</span><span class="mode-txt"><b>ดวงเสียงในใจน้อง</b><small id="heartSub"></small></span></button>
   <p class="note">ดวงรายวันเปิดได้วันละครั้ง รายเดือนเดือนละครั้ง ไพ่ที่ได้จะเข้าอัลบั้มและบันทึกลงสมุดดวงให้อัตโนมัติ · ดูดวงเพื่อความสนุก หากน้องไม่สบายควรพาไปพบสัตวแพทย์นะ</p>
@@ -317,12 +317,12 @@ function greetingLines() {
   // birthdays come first
   if (isBirthday(p.petBirthday, now)) {
     const age = ageText(p.petBirthday, now);
-    extra.push(`วันนี้วันเกิดน้อง${name}! สุขสันต์วันเกิด${age ? 'ครบ ' + age : ''}จ้ะ ข้าเตรียม “ดวงวันเกิด” ไว้ให้แล้ว`);
+    extra.push(`วันนี้วันเกิดน้อง${name}! สุขสันต์วันเกิด${age ? 'ครบ ' + age : ''}จ้ะ ขอให้น้องแข็งแรง มีความสุขมาก ๆ นะ`);
   } else {
     const dd = daysToBirthday(p.petBirthday, now);
-    if (dd > 0 && dd <= 7) extra.push(`อีก ${dd} วันก็วันเกิดน้อง${name}แล้วนะ ข้าจะเตรียมดวงวันเกิดไว้รอ`);
+    if (dd > 0 && dd <= 7) extra.push(`อีก ${dd} วันก็วันเกิดน้อง${name}แล้วนะ เตรียมของขวัญไว้หรือยังจ๊ะ`);
   }
-  D.pets.filter((q) => q.id !== p.id && isBirthday(q.petBirthday, now)).forEach((q) => extra.push(`วันนี้วันเกิดน้อง${nameOf(q)}ด้วยนะ! อย่าลืมพาน้องมาเปิดดวงวันเกิดล่ะ`));
+  D.pets.filter((q) => q.id !== p.id && isBirthday(q.petBirthday, now)).forEach((q) => extra.push(`วันนี้วันเกิดน้อง${nameOf(q)}ด้วยนะ! อย่าลืมกอดน้องแน่น ๆ ล่ะ`));
   if (isBirthday(D.ownerBirthday, now)) extra.push('แล้ววันนี้ก็เป็นวันเกิดของเจ้าด้วยนี่! ขอให้เจ้ากับน้องมีความสุขมาก ๆ นะจ๊ะ');
   // yesterday's card
   const y = p.journal.find((e) => e.mk === 'daily' && e.id.endsWith(yesterdayKey()));
@@ -361,7 +361,6 @@ function fillForm() {
 }
 
 const ACT = {
-  download() { downloadApp(); },
   async install() {
     const k = installKind();
     if (k === 'prompt') { const ok = await promptInstall(); if (ok) persistStorage(); render(); return; }
@@ -432,8 +431,8 @@ const ACT = {
   daily() { choose('daily'); },
   monthly() { choose('monthly'); },
   celtic() { choose('celtic'); },
-  compat() { choose('compat'); },
-  bday() { choose('bday'); },
+  compat() { toast('ดวงสมพงษ์กำลังจะมาเร็ว ๆ นี้ รอติดตามนะจ๊ะ'); },
+  bday() { toast('ดวงวันเกิดกำลังจะมาเร็ว ๆ นี้ รอติดตามนะจ๊ะ'); },
   heart() { choose('heart'); },
   pick(arg) {
     const i = Number(arg);
@@ -515,7 +514,7 @@ const ACT = {
     const file = new File([sh.blob], shareName(), { type: 'image/png' });
     try {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'ร้านไพ่เหมียวจันทร์', text: `ดวงของน้อง${dname()} จากร้านไพ่เหมียวจันทร์` });
+        await navigator.share({ files: [file], title: 'ร้านไพ่ SOULMYSTY', text: `ดวงของน้อง${dname()} จากร้านไพ่ SOULMYSTY` });
         return;
       }
     } catch (e) {
@@ -653,7 +652,7 @@ function render() {
   $('backBtn').setAttribute('aria-label', s === 'hub' ? 'ออกจากร้าน' : 'ย้อนกลับ');
   const ORDER = ['mode', 'shuffle', 'reveal', 'result'];
   const idx = ORDER.indexOf(s);
-  const place = { greet: 'ร้านไพ่เหมียวจันทร์', pet: 'ร้านไพ่เหมียวจันทร์', hub: 'ห้องมาดามโมจิ', journal: 'ชั้นสมุดดวง', album: 'ตู้ไพ่สะสม' }[s] || '';
+  const place = { greet: 'ร้านไพ่ SOULMYSTY', pet: 'ร้านไพ่ SOULMYSTY', hub: 'ห้องมาดามโมจิ', journal: 'ชั้นสมุดดวง', album: 'ตู้ไพ่สะสม' }[s] || '';
   const streak = liveStreak();
   setHTML($('hudMid'), idx >= 0
     ? `<div class="dots">${ORDER.map((o, i) => `<i class="dot" style="width:${i === idx ? 22 : 8}px;background:${i <= idx ? '#7456B3' : '#D9CCEB'}"></i>`).join('')}</div>`
@@ -672,7 +671,7 @@ function render() {
     celtic: `ตั้งคำถามเรื่องน้อง${dname()} ในใจ แล้วเลือกไพ่ 10 ใบ (${S.picks.length}/10)`
   }[S.mode];
   const hints = {
-    hub: isBirthday(p.petBirthday) ? `สุขสันต์วันเกิดน้อง${dname()}! แตะลูกแก้วเพื่อเปิดดวงวันเกิดได้เลยจ้ะ`
+    hub: isBirthday(p.petBirthday) ? `สุขสันต์วันเกิดน้อง${dname()}! มาดามขออวยพรให้น้องมีความสุขมาก ๆ นะจ๊ะ`
       : !readToday ? `แตะจุดที่ส่องแสงในร้านได้เลย วันนี้น้อง${dname()} ยังไม่ได้ดูดวงนะ`
       : waiting.length ? `น้อง${dname()}ดูดวงวันนี้แล้ว แต่น้อง${waiting[0]}ยังไม่ได้ดูนะ แตะชื่อน้องมุมขวาบนเพื่อสลับ`
       : `ดูดวงวันนี้แล้วนะ น้อง${dname()} จะแวะดูสมุดหรืออัลบั้มก็ได้จ้ะ`,
@@ -716,14 +715,10 @@ function render() {
   $('monthLabel').textContent = thDate(d, { month: 'long', year: 'numeric' }, 'เดือนนี้');
   $('dailyBadge').textContent = readToday ? 'เปิดแล้ววันนี้ · แตะดูอีกครั้ง' : '';
   $('monthlyBadge').textContent = readMonth ? 'เปิดแล้วเดือนนี้ · แตะดูอีกครั้ง' : '';
-  const hasBd = !!p.petBirthday, hasBoth = hasBd && !!D.ownerBirthday;
-  $('compatSub').textContent = !hasBoth ? 'ใส่วันเกิดน้องและเจ้าของเพื่อปลดล็อก' : doneFor('compat') ? 'เปิดแล้วเดือนนี้ · แตะดูอีกครั้ง' : 'ไพ่ 3 ใบ · เดือนละครั้ง';
-  $('compatBtn').classList.toggle('locked', !hasBoth);
-  const bw = bdayWindow(p.petBirthday);
-  $('bdaySub').textContent = !hasBd ? 'ใส่วันเกิดน้องเพื่อปลดล็อก' : doneFor('bday') ? 'เปิดแล้วปีนี้ · แตะดูอีกครั้ง'
-    : bw.open ? `เปิดได้แล้ว! อีก ${bw.daysLeft} วันจะปิด` : `เปิดช่วงวันเกิดน้อง · อีก ${bw.until} วัน`;
-  $('bdayBtn').classList.toggle('locked', !bw.open);
-  $('bdayBtn').classList.toggle('glow', bw.open && !doneFor('bday'));
+  // ดวงสมพงษ์ / ดวงวันเกิด: not ready yet — shown as "coming soon"
+  $('compatSub').textContent = 'ไพ่ 3 ใบ · น้องกับเจ้าของ';
+  $('bdaySub').textContent = 'ไพ่ 3 ใบ · ช่วงวันเกิดน้อง';
+  ['compatBtn', 'bdayBtn'].forEach((id) => { $(id).classList.add('locked', 'soon'); $(id).classList.remove('glow'); });
   const heartR = REWARDS.find((r) => r.id === 'heart');
   const heartOk = hasReward('heart');
   $('heartSub').textContent = !heartOk ? `รางวัลเมื่อมาเปิดไพ่รายวันครบ ${heartR.days} วัน · ตอนนี้ ${D.streak.days}/${heartR.days}` : doneFor('heart') ? 'ฟังแล้ววันนี้ · แตะดูอีกครั้ง' : 'ไพ่ 1 ใบ · น้องอยากบอกอะไรเจ้าของ · วันละครั้ง';
@@ -1016,7 +1011,7 @@ function shareOpts() {
     footer: /^https?:$/.test(location.protocol) && !/claude/.test(location.host) ? location.host : 'ดูดวงไพ่ยิปซีให้น้องเจ้าตัวเล็ก'
   };
 }
-const shareName = () => `moonpaw-${S.mode}-${todayKey()}.png`;
+const shareName = () => `soulmysty-${S.mode}-${todayKey()}.png`;
 function shareHTML() {
   const sh = S.share;
   const inner = sh.busy ? `<div class="share-wait">${ICON.spark}<b>มาดามกำลังวาดรูปให้…</b></div>`
@@ -1164,45 +1159,6 @@ window.addEventListener('resize', () => {
 stage.classList.add('resizing'); // first frame: place the scene without animating
 render();
 requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.remove('resizing')));
-
-/* ------------------------------------------------------------------ download
-   Offers the whole single-file app as moonpaw-pet-tarot.html.
-   - On claude.ai (published artifact): the file is published next to the page and
-     saved through the viewer's "downloads" capability.
-   - On a normal web host: re-fetches this page and saves it with <a download>.
-   - Opened from a local file: hidden (it is already downloaded). */
-const DL_NAME = 'moonpaw-pet-tarot.html';
-let dlMode = null;
-async function initDownload() {
-  const btn = $('dlBtn');
-  if (window.claude && window.claude.use) {
-    try { const d = await window.claude.use('downloads'); if (d) { dlMode = { kind: 'claude', d }; btn.hidden = false; } } catch (e) { /* unavailable */ }
-  } else if (/^https?:$/.test(location.protocol) && !document.querySelector('script[src]')) { // only the single-file build can be saved as one page
-    dlMode = { kind: 'web' }; btn.hidden = false;
-  }
-}
-async function downloadApp() {
-  const btn = $('dlBtn');
-  if (!dlMode || btn.disabled) return;
-  const label = btn.innerHTML;
-  btn.disabled = true; btn.innerHTML = `${ICON.dl} กำลังเตรียมไฟล์…`;
-  try {
-    if (dlMode.kind === 'claude') {
-      const r = await fetch(DL_NAME);
-      if (!r.ok) throw new Error('fetch');
-      await dlMode.d.save({ filename: DL_NAME, data: await r.blob() });
-    } else {
-      const r = await fetch(location.href.split('#')[0]);
-      const url = URL.createObjectURL(await r.blob());
-      const a = document.createElement('a'); a.href = url; a.download = DL_NAME;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 4000);
-    }
-  } catch (e) {
-    if (e && ['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(e.code)) btn.hidden = true;
-  } finally { btn.disabled = false; btn.innerHTML = label; }
-}
-initDownload();
 
 // new visitors arriving from a LINE link go straight to the phone's real browser, where the
 // game can be installed and its data kept; returning LINE players are left where their data is
