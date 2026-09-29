@@ -551,3 +551,20 @@ h2{margin:0;font-size:24px;font-weight:700;line-height:1.25}
 /* add-pet is locked for now (paid unlock later) */
 .pet-tab.add.locked{opacity:.75;color:#8a7a9a;border-color:#cdbfa6}
 .pet-tab.add.locked svg{width:13px;height:15px}
+
+/* ================================================================ softer screen transitions
+   Moving forward between screens felt too strong: big zooms, springy overshoot and panels
+   swapping at the same moment. Smaller distances, no overshoot, and the incoming panel
+   waits a beat so screens cross-fade instead of colliding. */
+.layer{transition:opacity .7s ease,transform .9s cubic-bezier(.4,0,.2,1),filter .7s ease}
+.street.gone{opacity:0;transform:scale(1.5)}
+.panel{transition:opacity .35s ease,transform .5s cubic-bezier(.22,1,.36,1)}
+.panel:not(.off){transition-delay:.12s}
+.panel.off{transform:translateY(12px)}
+.panel.sheet{transition:opacity .35s ease,transform .55s cubic-bezier(.22,1,.36,1)}
+.panel.sheet:not(.off){transition-delay:.08s}
+.veil{transition:opacity .5s ease}
+.rise{animation:rise .6s cubic-bezier(.22,1,.36,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
+.pop{animation:pop .5s cubic-bezier(.22,1,.36,1) both}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(14px)}to{opacity:1;transform:none}}
