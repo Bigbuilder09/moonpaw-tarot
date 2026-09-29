@@ -542,3 +542,12 @@ h2{margin:0;font-size:24px;font-weight:700;line-height:1.25}
 .mode-row.soon{opacity:.82}
 .mode-row.soon small{color:#8a7a98}
 .btn-soft:disabled{opacity:.45;cursor:default;pointer-events:none}
+
+/* album: general card meaning */
+.meaning-intro{align-self:stretch;display:flex;gap:8px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.72);font-size:14px;line-height:1.6;color:#4a3860}
+.meaning-intro svg{flex:none;margin-top:3px;color:#c99a3e}
+.modal-box .meaning-side>div{font-size:14px;line-height:1.55}
+.meaning-note{margin:0;text-align:center;font-size:12px}
+/* add-pet is locked for now (paid unlock later) */
+.pet-tab.add.locked{opacity:.75;color:#8a7a9a;border-color:#cdbfa6}
+.pet-tab.add.locked svg{width:13px;height:15px}

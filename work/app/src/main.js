@@ -11,6 +11,8 @@ import { ICON } from './icons.js';
 import { READ, ITEM_FIX } from './readings.js';
 import { dayKey, addDays, isBirthday, daysToBirthday, ageText, bdayWindow, BDAY_WINDOW, compatInfo, EL_TH, BLESS, HEART, REWARDS, nextReward } from './extras.js';
 import { makeShareImage } from './share.js';
+import * as sfx from './sfx.js';
+import { MEANING } from './meanings.js';
 import { initInstall, installKind, promptInstall, openExternal, askedExternal, isLine, persistStorage } from './install.js';
 
 /* ------------------------------------------------------------------ state */
@@ -81,6 +83,9 @@ const P = () => D.pets.find((p) => p.id === D.activeId) || D.pets[0];   // the p
 const nameOf = (p) => (p.name || '').trim() || 'เจ้าตัวเล็ก';
 const dname = () => nameOf(P());
 const MAX_PETS = 6;
+// Adding more pets will be a paid unlock later. Until then the button shows a lock.
+// Existing households that already have several pets keep them.
+const ADD_PET_LOCKED = true;
 // once-per-period readings: the key of the current period (celtic has none)
 function periodKey(mode, p = P()) {
   if (mode === 'daily' || mode === 'heart') return todayKey();
@@ -170,10 +175,10 @@ stage.innerHTML = `
   <label for="petName" class="field">ชื่อน้อง
     <input id="petName" maxlength="20" placeholder="เช่น ข้าวปั้น" autocomplete="off">
   </label>
-  <label for="petBirthday" class="field">วันเกิดน้อง
+  <label for="petBirthday" class="field">วันเกิดน้อง <small class="field-sub">(optional)</small>
     <input id="petBirthday" type="date" autocomplete="off">
   </label>
-  <label for="ownerBirthday" class="field">วันเกิดเจ้าของ <small class="field-sub">ใช้กับน้องทุกตัว</small>
+  <label for="ownerBirthday" class="field">วันเกิดเจ้าของ <small class="field-sub">(optional) · ใช้กับน้องทุกตัว</small>
     <input id="ownerBirthday" type="date" autocomplete="off">
   </label>
   <p class="note bd-note">${ICON.cake}ใส่วันเกิดไว้ แล้วมาดามจะอวยพรให้ในวันเกิดนะ · “ดวงสมพงษ์” และ “ดวงวันเกิด” เปิดให้เร็ว ๆ นี้</p>
@@ -397,6 +402,7 @@ const ACT = {
     if (S.step === 'pet') { fillForm(); go('pet'); } else render();
   },
   addPet() {
+    if (ADD_PET_LOCKED) { toast('การเพิ่มน้องตัวใหม่จะเปิดให้เร็ว ๆ นี้ รอติดตามนะจ๊ะ'); return; }
     if (D.pets.length >= MAX_PETS) return;
     syncForm();
     const p = store.newPet();
@@ -464,12 +470,13 @@ const ACT = {
     if (S.step !== 'shuffle' || S.sealed) return;
     const g = ++S.gen; // cancels any auto-pick still on its way
     S.dealt = false; S.picks = []; S.arts = []; S.revs = []; render();
-    later(() => { if (S.gen === g && S.step === 'shuffle') { S.deck = shuffle(ARTS); S.dealt = true; render(); } }, 520);
+    later(() => { if (S.gen === g && S.step === 'shuffle') { S.deck = shuffle(ARTS); S.dealt = true; sfx.riffle(); render(); } }, 520);
   },
   flip(arg) {
     const k = Number(arg);
     if (S.flipped.includes(k)) return;
     S.flipped.push(k);
+    sfx.flip();
     const btn = document.querySelector(`[data-act="flip"][data-arg="${k}"]`);
     if (btn) btn.parentElement.classList.add('flipped');
     if (S.flipped.length === need()) completeReading();
@@ -491,7 +498,8 @@ const ACT = {
   otherMode() { go('mode'); },
   hub() { go('hub'); },
   tab(arg) { S.albumTab = arg; render(); },
-  open(arg) { S.detail = arg; render(); },
+  open(arg) { S.detail = arg; S.detailAlbum = false; render(); },
+  openAlbum(arg) { S.detail = arg; S.detailAlbum = true; render(); },
   close() { S.detail = null; render(); },
   // rewards
   useBack(arg) {
@@ -565,7 +573,7 @@ function choose(mode) {
     return;
   }
   go('shuffle', { mode, readingId, deck: shuffle(ARTS), picks: [], arts: [], revs: [], flipped: [], dealt: false, sealed: false, gen: S.gen + 1, repeat: false, newCards: [], newRewards: [], streakUp: 0 });
-  later(() => { S.dealt = true; render(); }, 380);
+  later(() => { S.dealt = true; sfx.riffle(); render(); }, 380);
 }
 
 /** Runs once, the moment the last card of a reading is turned over: everything is saved
@@ -616,7 +624,9 @@ function petTabsHTML(withAdd) {
     const sel = p.id === D.activeId;
     const dot = !withAdd && !doneFor('daily', p) ? '<i class="wait-dot" title="ยังไม่ได้เปิดไพ่วันนี้"></i>' : '';
     return `<button class="pet-tab${sel ? ' sel' : ''}" data-act="switchPet" data-arg="${p.id}" aria-pressed="${sel}">${petHTML(p.pet, 26)}<span>${esc(nameOf(p))}</span>${dot}</button>`;
-  }).join('') + (withAdd && D.met && D.pets.length < MAX_PETS ? `<button class="pet-tab add" data-act="addPet">${ICON.plus}<span>เพิ่มน้อง</span></button>` : '');
+  }).join('') + (withAdd && D.met && D.pets.length < MAX_PETS ? (ADD_PET_LOCKED
+      ? `<button class="pet-tab add locked" data-act="addPet" aria-label="เพิ่มน้อง (ล็อกอยู่ เปิดให้เร็ว ๆ นี้)">${ICON.lock}<span>เพิ่มน้อง</span></button>`
+      : `<button class="pet-tab add" data-act="addPet">${ICON.plus}<span>เพิ่มน้อง</span></button>`) : '');
 }
 // twinkling stars / falling petals over the parlour, unlocked as rewards
 const DECO_POS = [[8, 12], [22, 6], [37, 15], [52, 5], [66, 13], [81, 7], [93, 18], [14, 30], [31, 26], [58, 24], [76, 29], [89, 36], [5, 45], [45, 36], [70, 42], [97, 52]];
@@ -683,7 +693,7 @@ function render() {
       : !readToday ? `แตะจุดที่ส่องแสงในร้านได้เลย วันนี้น้อง${dname()} ยังไม่ได้ดูดวงนะ`
       : waiting.length ? `น้อง${dname()}ดูดวงวันนี้แล้ว แต่น้อง${waiting[0]}ยังไม่ได้ดูนะ แตะชื่อน้องมุมขวาบนเพื่อสลับ`
       : `ดูดวงวันนี้แล้วนะ น้อง${dname()} จะแวะดูสมุดหรืออัลบั้มก็ได้จ้ะ`,
-    pet: D.met ? 'แก้ข้อมูล สลับ หรือเพิ่มน้องในบ้านได้ที่นี่จ้ะ' : 'เจ้าตัวเล็กของเจ้าชื่ออะไร เป็นน้องอะไรเอ่ย?',
+    pet: D.met ? (ADD_PET_LOCKED ? (D.pets.length > 1 ? 'แก้ข้อมูลหรือสลับน้องได้ที่นี่จ้ะ' : 'แก้ข้อมูลน้องได้ที่นี่จ้ะ') : 'แก้ข้อมูล สลับ หรือเพิ่มน้องในบ้านได้ที่นี่จ้ะ') : 'เจ้าตัวเล็กของเจ้าชื่ออะไร เป็นน้องอะไรเอ่ย?',
     mode: `น้อง${dname()} อยากรู้ดวงแบบไหนดีจ๊ะ`,
     shuffle: shuffleHint,
     reveal: allFlipped ? 'ไพ่พูดแล้ว… มาฟังคำทำนายกันเถอะ' : n === 10 ? 'แตะไพ่ทีละใบตามลำดับ หรือเปิดทั้งหมดพร้อมกันก็ได้จ้ะ' : 'แตะไพ่เพื่อเปิดดวงชะตา'
@@ -789,7 +799,7 @@ function render() {
   setHTML($('journalBody'), s === 'journal' ? journalHTML() : '');
   onoff($('album'), s === 'album');
   setHTML($('albumBody'), s === 'album' ? albumHTML() : '');
-  setHTML($('detail'), S.detail ? detailHTML(S.detail) : '');
+  setHTML($('detail'), S.detail ? (S.detailAlbum ? meaningHTML(S.detail) : detailHTML(S.detail)) : '');
   setHTML($('shareBox'), S.share ? shareHTML() : '');
   setHTML($('installBox'), S.install ? installHTML() : '');
 }
@@ -934,6 +944,7 @@ function resultHTML() {
 const bgm = document.getElementById('bgm');
 bgm.volume = 0.25;
 const musicOn = () => D.music !== false;
+sfx.setSfxEnabled(musicOn); // sound effects follow the same speaker button
 let heard = false; // has the player tapped anything yet
 function syncMusic() {
   const play = musicOn() && heard && !document.hidden;
@@ -943,7 +954,7 @@ function syncMusic() {
     b.innerHTML = musicOn() ? ICON.soundOn : ICON.soundOff;
     b.classList.toggle('off', !musicOn());
     b.setAttribute('aria-pressed', String(musicOn()));
-    b.title = musicOn() ? 'ปิดเพลง' : 'เปิดเพลง';
+    b.title = musicOn() ? 'ปิดเสียง' : 'เปิดเสียง';
   });
 }
 stage.addEventListener('pointerdown', () => { if (!heard) { heard = true; syncMusic(); } }, { capture: true });
@@ -1095,8 +1106,29 @@ function albumHTML() {
     <div class="muted">สะสมไพ่ได้จากดวงรายวันและรายเดือน · แตะไพ่ที่ปลดล็อกเพื่อดูความหมาย</div>
     <div class="tabs">${TABS.map((t) => { const it = items(t[0]); return `<button class="tab${S.albumTab === t[0] ? ' sel' : ''}" data-act="tab" data-arg="${t[0]}" aria-pressed="${S.albumTab === t[0]}">${t[1]}<small>${it.filter((r) => has(r.art)).length}/${it.length}</small></button>`; }).join('')}</div>
     <div class="album-grid">${items(S.albumTab).map((r) => has(r.art)
-      ? `<div class="album-item"><button class="card-btn opt pop" data-act="open" data-arg="${r.art}" aria-label="ดูความหมาย ${r.name}">${cardHTML(r.art, 72)}</button><span>${r.num} · ${r.name}</span></div>`
+      ? `<div class="album-item"><button class="card-btn opt pop" data-act="openAlbum" data-arg="${r.art}" aria-label="ดูความหมาย ${r.name}">${cardHTML(r.art, 72)}</button><span>${r.num} · ${r.name}</span></div>`
       : `<div class="album-item locked"><div class="locked-card">${cardHTML('back', 72)}${ICON.lock}</div><span>${r.num} · ???</span></div>`).join('')}</div>
+  </div>`;
+}
+
+// Album: the card's general meaning, the same for every pet (readings stay in the reading screens)
+function meaningHTML(key) {
+  const x = INFO[key], m = MEANING[key];
+  if (!x || !m) return detailHTML(key);
+  const side = (rev) => `<div class="box stack meaning-side" style="background:${x.bg}">
+        <div class="row between"><b>${(rev ? x.rv : x.up).key}</b>${orient(rev)}</div>
+        <div>${m[rev ? 2 : 1]}</div>
+      </div>`;
+  return `<div class="modal lineIn" role="dialog" aria-modal="true" aria-label="${x.th}">
+    <button class="modal-bg" data-act="close" aria-label="ปิด"></button>
+    <div class="modal-box">
+      <div class="pop" style="transform:rotate(-2deg)">${cardHTML(key, 150)}</div>
+      <div class="center"><div class="muted">${x.en}</div><div class="big">${x.th}</div></div>
+      <div class="meaning-intro">${ICON.spark}<span>${m[0]}</span></div>
+      ${side(false)}${side(true)}
+      <p class="note meaning-note">นี่คือความหมายทั่วไปของไพ่ใบนี้จ้ะ คำทำนายสำหรับน้องจะได้ตอนเปิดไพ่ดูดวง</p>
+      <button class="btn-primary small" data-act="close">ปิด</button>
+    </div>
   </div>`;
 }
 
