@@ -93,7 +93,13 @@ function periodKey(mode, p = P()) {
   if (mode === 'bday') { const w = bdayWindow(p.petBirthday); return w.open ? w.year : ''; }
   return '';
 }
-const doneFor = (mode, p = P()) => { const k = periodKey(mode, p); const r = p.done[mode]; return k && r && r.key === k ? r : null; };
+const CELTIC_WAIT = 24 * 3600 * 1000; // the ten-card spread opens once every 24 hours
+const doneFor = (mode, p = P()) => {
+  const r = p.done[mode];
+  if (mode === 'celtic') return r && r.at && Date.now() - r.at < CELTIC_WAIT ? r : null;
+  const k = periodKey(mode, p); return k && r && r.key === k ? r : null;
+};
+const celticUntil = (p = P()) => ((p.done.celtic && p.done.celtic.at) || 0) + CELTIC_WAIT;
 const hasReward = (id) => { const r = REWARDS.find((x) => x.id === id); return !!r && D.streak.days >= r.days; };
 // a streak is still alive if the last daily reading was today or yesterday
 const liveStreak = () => (D.streak.last === todayKey() || D.streak.last === yesterdayKey() ? D.streak.count : 0);
@@ -110,7 +116,7 @@ function newlyUnlocked() {
   return fresh;
 }
 // repair older saves: a once-per-period reading that was opened always belongs in the album
-D.pets.forEach((p) => Object.values(p.done).forEach((r) => (r.arts || []).forEach((a) => { if (!D.collected.includes(a)) D.collected.push(a); })));
+D.pets.forEach((p) => Object.entries(p.done).filter(([m]) => m !== 'celtic').forEach(([, r]) => (r.arts || []).forEach((a) => { if (!D.collected.includes(a)) D.collected.push(a); })));
 setBack(D.back);
 
 /* ------------------------------------------------------------------ stage */
@@ -216,7 +222,7 @@ stage.innerHTML = `
   </div>
   <button class="opt mode-btn celtic" data-act="celtic">
     <span class="celtic-art" aria-hidden="true">${[[22, 34], [22, 34, 1], [22, 68], [0, 34], [22, 0], [44, 34], [76, 72], [76, 48], [76, 24], [76, 0]].map((p) => `<i data-bk="19" style="left:${p[0]}px;top:${p[1]}px${p[2] ? ';transform:rotate(90deg)' : ''}"></i>`).join('')}</span>
-    <span class="celtic-text"><b>ดวงชะตารวม 10 ใบ</b><small>ผัง Celtic Cross ดูลึกทุกด้าน ตั้งแต่รากฐาน ใจกลาง จนถึงผลลัพธ์ · เปิดได้ทุกเมื่อ (ไม่นับเข้าอัลบั้มไพ่)</small></span>
+    <span class="celtic-text"><b>ดวงชะตารวม 10 ใบ</b><small>ผัง Celtic Cross ดูลึกทุกด้าน ตั้งแต่รากฐาน ใจกลาง จนถึงผลลัพธ์ · เปิดได้ทุก 24 ชั่วโมง (ไม่นับเข้าอัลบั้มไพ่)</small><span id="celticBadge" class="badge"></span><span class="countdown" id="celticCd"></span></span>
   </button>
   <div class="grid2">
     <button class="opt mode-row compat" data-act="compat" id="compatBtn"><span class="mode-ico">${ICON.hearts}</span><span class="mode-txt"><b>ดวงสมพงษ์</b><small id="compatSub"></small><span class="soon-tag">Coming soon</span></span></button>
@@ -302,7 +308,10 @@ function tickCountdown() {
   $('monthlyCd').innerHTML = readMonth ? cdHTML(mTxt) : '';
   $('todayStatus').textContent = readToday ? 'รายวันใหม่ใน ' + dTxt.replace(/:\d\d$/, '') : `น้อง${dname()}ยังไม่ได้เปิดไพ่`;
   const cd = document.getElementById('resultCd');
-  if (cd) cd.textContent = S.mode === 'monthly' || S.mode === 'compat' ? mTxt : dTxt;
+  if (cd) cd.textContent = S.mode === 'monthly' || S.mode === 'compat' ? mTxt : S.mode === 'celtic' ? untilText(celticUntil()) : dTxt;
+  const readCeltic = !!doneFor('celtic');
+  $('celticCd').innerHTML = readCeltic ? cdHTML(untilText(celticUntil())) : '';
+  $('celticBadge').textContent = readCeltic ? 'เปิดแล้ว · แตะดูอีกครั้ง' : '';
 }
 setInterval(tickCountdown, 1000);
 
@@ -568,10 +577,12 @@ function choose(mode) {
     toast(`ดวงนี้จะปลดล็อกเมื่อมาเปิดไพ่รายวันครบ ${r.days} วัน · ตอนนี้ ${D.streak.days} วันแล้วจ้ะ`); return;
   }
   const pk = periodKey(mode);
-  const readingId = mode === 'celtic' ? `celtic-${p.id}-${Date.now()}` : `${mode}-${p.id}-${pk}`;
   const done = doneFor(mode);
+  const readingId = mode === 'celtic' ? (done ? done.key : `celtic-${p.id}-${Date.now()}`) : `${mode}-${p.id}-${pk}`;
   if (done) {
     go('result', { mode, readingId, arts: done.arts.slice(), revs: (done.revs || []).slice(), repeat: true, newCards: [], newRewards: [], streakUp: 0 });
+    // readings are kept in the journal automatically (older saves may have removed one)
+    if (!p.journal.some((e) => e.id === readingId)) { p.journal = [makeEntry()].concat(p.journal); persist(); }
     return;
   }
   go('shuffle', { mode, readingId, deck: shuffle(ARTS), picks: [], arts: [], revs: [], flipped: [], dealt: false, sealed: false, gen: S.gen + 1, repeat: false, newCards: [], newRewards: [], streakUp: 0 });
@@ -584,6 +595,7 @@ function completeReading() {
   const p = P();
   const pk = periodKey(S.mode);
   if (pk) p.done[S.mode] = { key: pk, arts: S.arts.slice(), revs: S.revs.slice() };
+  if (S.mode === 'celtic') p.done.celtic = { key: S.readingId, at: Date.now(), arts: S.arts.slice(), revs: S.revs.slice() };
   // only the once-per-period readings fill the album; the ten-card spread can be opened any time
   const fresh = S.mode === 'celtic' ? [] : S.arts.filter((a) => !D.collected.includes(a));
   D.collected = D.collected.concat(fresh);
@@ -846,7 +858,8 @@ const REPEAT_TH = {
   heart: 'วันนี้ฟังเสียงในใจน้องไปแล้ว นี่คือไพ่ของวันนี้จ้ะ',
   monthly: 'เดือนนี้น้องเปิดไพ่ไปแล้ว นี่คือดวงประจำเดือนของน้องจ้ะ',
   compat: 'เดือนนี้ดูดวงสมพงษ์ไปแล้ว นี่คือไพ่ของเดือนนี้จ้ะ',
-  bday: 'ดวงวันเกิดปีนี้เปิดไปแล้ว นี่คือไพ่วันเกิดของน้องจ้ะ'
+  bday: 'ดวงวันเกิดปีนี้เปิดไปแล้ว นี่คือไพ่วันเกิดของน้องจ้ะ',
+  celtic: 'ดวงชะตารวมเปิดได้ทุก 24 ชั่วโมง นี่คือไพ่ 10 ใบชุดล่าสุดของน้องจ้ะ'
 };
 function resultTitle(d) {
   return {
@@ -921,7 +934,7 @@ function resultHTML() {
   const monthly = S.mode === 'monthly' || S.mode === 'compat';
   const repeat = S.repeat && REPEAT_TH[S.mode] ? `<div class="notice">${REPEAT_TH[S.mode]}${S.mode === 'bday'
     ? '<div class="notice-cd">เจอกันใหม่ในวันเกิดปีหน้านะจ๊ะ</div>'
-    : `<div class="notice-cd">${ICON.clock}<span>เปิดใหม่ได้ใน <b id="resultCd">${untilText(monthly ? nextMonth() : nextDay())}</b></span></div>`}</div>` : '';
+    : `<div class="notice-cd">${ICON.clock}<span>เปิดใหม่ได้ใน <b id="resultCd">${untilText(monthly ? nextMonth() : S.mode === 'celtic' ? celticUntil() : nextDay())}</b></span></div>`}</div>` : '';
   const nr = nextReward(D.streak.days);
   const streakBanner = S.streakUp ? `<div class="pop streak-banner">${ICON.flame}<span><b>${S.streakUp > 1 ? `มาหามาดามต่อเนื่อง ${S.streakUp} วัน!` : 'เริ่มนับวันแรกแล้ว! พรุ่งนี้มาต่อนะ'}</b><small>เปิดไพ่รายวันมาแล้ว ${D.streak.days} วัน${nr ? ` · อีก ${nr.days - D.streak.days} วันได้ “${nr.name}”` : ''}</small></span></div>` : '';
   const rewardBanner = S.newRewards.length ? `<button class="pop new-cards reward" data-act="goJournal">${ICON.gift}<span><b>ปลดล็อกรางวัลใหม่!</b><small>${S.newRewards.map((r) => r.name).join(' · ')} · แตะเพื่อดูในสมุดดวง</small></span></button>` : '';
@@ -934,8 +947,8 @@ function resultHTML() {
     ${rewardBanner}
     ${S.newCards.length ? `<button class="pop new-cards" data-act="goAlbum"><svg class="shine" width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 3 Q18 18 33 18 Q18 18 18 33 Q18 18 3 18 Q18 18 18 3Z" fill="#F0B955" stroke="#6B5577" stroke-width="2" stroke-linejoin="round"/></svg><span><b>ได้ไพ่ใหม่เข้าอัลบั้ม +${S.newCards.length}</b><small>สะสมแล้ว ${D.collected.length}/78 ใบ · แตะเพื่อดูอัลบั้ม</small></span></button>` : ''}
     ${installNudgeHTML()}
-    <button class="btn-share" data-act="share">${ICON.share}<span><b>แชร์ดวงเป็นรูป</b><small>ขนาดพอดีสตอรี่ IG และ LINE</small></span></button>
-    <button class="btn-primary" data-act="save" id="saveBtn"></button>
+    <button class="btn-share" data-act="share"><span class="share-ico">${ICON.sharePic}</span><span class="share-txt"><b>แชร์ดวงเป็นรูป</b><small>ขนาดพอดีสตอรี่ IG และ LINE</small></span><span class="share-go" aria-hidden="true">›</span></button>
+    <p class="note saved-note">${ICON.check}<span>บันทึกลงสมุดดวงให้อัตโนมัติแล้วจ้ะ</span></p>
     <div class="grid2"><button class="btn-outline" data-act="otherMode">ดูดวงแบบอื่น</button><button class="btn-outline" data-act="hub">กลับไปในร้าน</button></div>
     <p class="note">คำทำนายเพื่อความบันเทิง หากน้องมีอาการผิดปกติควรปรึกษาสัตวแพทย์</p>
   </div>`;

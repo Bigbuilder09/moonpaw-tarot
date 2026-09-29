@@ -568,3 +568,21 @@ h2{margin:0;font-size:24px;font-weight:700;line-height:1.25}
 @keyframes rise{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
 .pop{animation:pop .5s cubic-bezier(.22,1,.36,1) both}
 @keyframes pop{from{opacity:0;transform:scale(.94) translateY(14px)}to{opacity:1;transform:none}}
+
+/* entering the parlour: a soft fade from dusk instead of a bright flash */
+#flash .flash{background:#1d1228;animation:dusk .9s ease-out both}
+@keyframes dusk{0%{opacity:.55}100%{opacity:0}}
+
+/* readings save themselves */
+.saved-note{display:flex;align-items:center;justify-content:center;gap:6px;color:#6a8a62}
+.saved-note svg{width:15px;height:15px}
+
+/* share button */
+.btn-share{display:flex;align-items:center;gap:12px;min-height:64px;padding:10px 14px 10px 10px;border:1.5px solid #e0c28f;border-radius:20px;background:linear-gradient(135deg,#fff7e6,#f2e5f6);box-shadow:0 3px 0 #d8b98a;color:#5B4488;text-align:left;transition:transform .15s ease,box-shadow .15s ease}
+.btn-share:active{transform:translateY(2px);box-shadow:0 1px 0 #d8b98a}
+.btn-share .share-ico{display:flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;border-radius:14px;background:linear-gradient(145deg,#8e6ab4,#6a4a8e);color:#fff4dc;box-shadow:inset 0 -2px 0 #0002}
+.btn-share .share-ico svg{width:24px;height:24px}
+.btn-share .share-txt{display:flex;flex-direction:column;gap:2px;flex:1}
+.btn-share .share-txt b{font-size:16px;color:#4d3470}
+.btn-share .share-txt small{font-size:12px;color:var(--muted)}
+.btn-share .share-go{flex:none;font-size:26px;line-height:1;color:#b08fcf;margin-right:2px}
