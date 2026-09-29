@@ -348,7 +348,7 @@ function greetingLines() {
 
 /* ------------------------------------------------------------------ flow */
 function go(step, extra) {
-  Object.assign(S, { step, entered: false, detail: null, confirmReset: false, confirmUnsave: false, confirmRemove: false, toast: '' }, extra || {});
+  Object.assign(S, { step, entered: false, fromResult: false, detail: null, confirmReset: false, confirmUnsave: false, confirmRemove: false, toast: '' }, extra || {});
   render();
 }
 function toast(msg) { S.toast = msg; render(); }
@@ -386,6 +386,8 @@ const ACT = {
     else { fillForm(); go('pet'); }
   },
   back() {
+    // album / journal opened from a reading: go back to that reading
+    if (S.fromResult && (S.step === 'album' || S.step === 'journal')) { go('result'); return; }
     const to = { greet: 'street', pet: D.met ? 'hub' : 'greet', hub: 'street', mode: 'hub', shuffle: 'mode', reveal: 'mode', result: 'hub', journal: 'hub', album: 'hub' }[S.step];
     if (!to) return;
     if (S.step === 'pet') syncForm();
@@ -428,11 +430,11 @@ const ACT = {
     go('street', { door: false, line: 0 });
   },
   goRead() { go('mode'); },
-  goJournal() { go('journal'); },
+  goJournal() { go('journal', { fromResult: S.step === 'result' }); },
   goAlbum() {
     const first = S.step === 'result' && S.newCards[0];
     const m = first && first.match(/^(cups|wands|swords|pentacles)/);
-    go('album', first ? { albumTab: m ? m[1] : 'major' } : {});
+    go('album', Object.assign({ fromResult: S.step === 'result' }, first ? { albumTab: m ? m[1] : 'major' } : {}));
   },
   daily() { choose('daily'); },
   monthly() { choose('monthly'); },
@@ -927,9 +929,10 @@ function resultHTML() {
     <button class="sheet-close" data-act="back" aria-label="ปิด">${ICON.close}</button>
     <div class="res-head"><div class="muted">${resultTitle(d)}</div>
     <h2>${h2}</h2></div>
-    ${repeat}${streakBanner}${rewardBanner}
-    ${S.newCards.length ? `<button class="pop new-cards" data-act="goAlbum"><svg class="shine" width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 3 Q18 18 33 18 Q18 18 18 33 Q18 18 3 18 Q18 18 18 3Z" fill="#F0B955" stroke="#6B5577" stroke-width="2" stroke-linejoin="round"/></svg><span><b>ได้ไพ่ใหม่เข้าอัลบั้ม +${S.newCards.length}</b><small>สะสมแล้ว ${D.collected.length}/78 ใบ · แตะเพื่อดูอัลบั้ม</small></span></button>` : ''}
+    ${repeat}${streakBanner}
     ${body}
+    ${rewardBanner}
+    ${S.newCards.length ? `<button class="pop new-cards" data-act="goAlbum"><svg class="shine" width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 3 Q18 18 33 18 Q18 18 18 33 Q18 18 3 18 Q18 18 18 3Z" fill="#F0B955" stroke="#6B5577" stroke-width="2" stroke-linejoin="round"/></svg><span><b>ได้ไพ่ใหม่เข้าอัลบั้ม +${S.newCards.length}</b><small>สะสมแล้ว ${D.collected.length}/78 ใบ · แตะเพื่อดูอัลบั้ม</small></span></button>` : ''}
     ${installNudgeHTML()}
     <button class="btn-share" data-act="share">${ICON.share}<span><b>แชร์ดวงเป็นรูป</b><small>ขนาดพอดีสตอรี่ IG และ LINE</small></span></button>
     <button class="btn-primary" data-act="save" id="saveBtn"></button>
