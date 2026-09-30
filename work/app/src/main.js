@@ -18,7 +18,7 @@ import { petTabsHTML } from './views/common.js';
 import { resultHTML } from './views/result.js';
 import { installHTML } from './views/install-ui.js';
 import { shareOpts, shareName, shareHTML } from './views/share-ui.js';
-import { journalHTML } from './views/journal.js';
+import { journalHTML, calMonth, firstMonth } from './views/journal.js';
 import { albumHTML, meaningHTML, detailHTML } from './views/album.js';
 
 // repair older saves: a once-per-period reading that was opened always belongs in the album
@@ -213,10 +213,17 @@ setInterval(tickCountdown, 1000);
 
 /* ------------------------------------------------------------------ flow */
 function go(step, extra) {
-  Object.assign(S, { step, entered: false, fromResult: false, detail: null, confirmReset: false, confirmUnsave: false, confirmRemove: false, toast: '' }, extra || {});
+  Object.assign(S, { step, entered: false, fromResult: false, past: null, fromJournal: false, detail: null, confirmReset: false, confirmUnsave: false, confirmRemove: false, toast: '' }, extra || {});
   render();
 }
 function toast(msg) { S.toast = msg; render(); }
+function calShift(n) {
+  const { y, m } = calMonth();
+  const t = new Date(y, m + n, 1), now = new Date(), f = firstMonth();
+  const k = t.getFullYear() * 12 + t.getMonth();
+  if (k > now.getFullYear() * 12 + now.getMonth() || k < f.y * 12 + f.m) return;
+  S.calY = t.getFullYear(); S.calM = t.getMonth(); S.calDay = 0; render();
+}
 function syncForm() {
   const p = P();
   p.name = $('petName').value.trim();
@@ -256,6 +263,8 @@ const ACT = {
   back() {
     // album / journal opened from a reading: go back to that reading
     if (S.fromResult && (S.step === 'album' || S.step === 'journal')) { go('result'); return; }
+    // a saved reading opened from the journal: back to the journal, same month and day
+    if (S.step === 'result' && S.fromJournal) { go('journal'); return; }
     const to = { greet: 'street', pet: D.met ? 'hub' : 'greet', hub: 'street', mode: 'hub', shuffle: 'mode', reveal: 'mode', result: 'hub', journal: 'hub', album: 'hub' }[S.step];
     if (!to) return;
     if (S.step === 'pet') syncForm();
@@ -298,7 +307,26 @@ const ACT = {
     go('street', { door: false, line: 0 });
   },
   goRead() { go('mode'); },
-  goJournal() { go('journal', { fromResult: S.step === 'result' }); },
+  goJournal() {
+    // opening the journal fresh starts at this month; coming back from a reading keeps the place
+    if (S.step !== 'result') { S.calY = null; S.calM = null; S.calDay = 0; }
+    go('journal', { fromResult: S.step === 'result' && !S.fromJournal });
+  },
+  // journal calendar
+  calPrev() { calShift(-1); },
+  calNext() { calShift(1); },
+  calDay(arg) { const d = Number(arg) || 0; S.calDay = S.calDay === d ? 0 : d; render(); },
+  /** Opens a saved reading in full (all cards, e.g. all ten of the big spread). */
+  viewEntry(id) {
+    const e = P().journal.find((x) => x.id === id);
+    if (!e || !e.cards || !e.cards.length) return;
+    const mode = e.mk || (e.cards.length === 10 ? 'celtic' : e.cards.length === 3 ? 'monthly' : 'daily');
+    go('result', {
+      mode, readingId: e.id, arts: e.cards.slice(), revs: (e.revs || []).slice(), flipped: e.cards.map((_, i) => i),
+      past: e, fromJournal: true, repeat: false, newCards: [], newRewards: [], streakUp: 0
+    });
+    const box = $('result'); if (box) box.scrollTop = 0;
+  },
   goAlbum() {
     const first = S.step === 'result' && S.newCards[0];
     const m = first && first.match(/^(cups|wands|swords|pentacles)/);

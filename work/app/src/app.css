@@ -607,3 +607,25 @@ h2{margin:0;font-size:24px;font-weight:700;line-height:1.25}
 .btn-share:focus-visible{outline:3px solid #9164b6;outline-offset:5px}
 @media(max-width:360px){.btn-share{gap:10px;padding:15px 12px}.btn-share .share-txt b{font-size:15px}.btn-share .share-go{width:25px;height:25px}}
 @media(prefers-reduced-motion:reduce){.btn-share{transition:none}.btn-share:hover,.btn-share:active{transform:none}}
+
+/* journal: month navigation, tappable days and entries that open the full reading */
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.cal-nav{width:40px;height:40px;padding:0;display:flex;align-items:center;justify-content:center;border:2px solid var(--border);border-radius:20px;background:var(--cream);color:var(--ink);cursor:pointer}
+.cal-nav svg{width:18px;height:18px}
+.cal-nav.next svg{transform:scaleX(-1)}
+.cal-nav:disabled{opacity:.35;cursor:default}
+.cal button.day{border:0;font:inherit;font-size:13px;font-weight:600;color:inherit;cursor:pointer}
+.cal button.day:active{transform:scale(.94)}
+.cal .day.sel{outline:3px solid var(--btn);outline-offset:-3px}
+.cal .day.today.sel{outline-color:#F0B955}
+.cal-tip{margin-top:8px;font-size:12px;text-align:center}
+.list-head{margin:2px 4px -6px;font-size:14px}
+.list-head .link-btn{min-height:32px;align-self:auto}
+.empty.small{padding:8px 12px}
+button.entry{width:100%;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;transition:transform .15s}
+button.entry:active{transform:scale(.98)}
+.entry-cards{flex:none}
+.entry-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.entry-open{margin-top:4px;font-size:12px;font-weight:700;color:var(--btn)}
+.past-note{display:flex;align-items:center;gap:8px}
+.past-note svg{width:20px;height:20px;flex:none}

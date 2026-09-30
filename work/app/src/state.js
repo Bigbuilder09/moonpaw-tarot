@@ -30,6 +30,9 @@ export const S = {             // session only
 
 export const persist = () => store.save(D);
 
+/** The day a reading belongs to: today for a new one, the saved day when reopened from the journal. */
+export const readingDate = () => (S.past ? new Date(S.past.year, S.past.month, S.past.day) : new Date());
+
 export const timers = [];
 
 export const later = (fn, ms) => timers.push(setTimeout(fn, ms));

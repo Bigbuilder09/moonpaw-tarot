@@ -2,11 +2,11 @@
 import interiorPortrait from '../assets/parlour-portrait.webp';
 import { ICON } from '../icons.js';
 import { ageText, compatInfo, BLESS, HEART } from '../extras.js';
-import { D, S, todayKey, thDate, LBL, R, P, dname } from '../state.js';
+import { D, S, todayKey, thDate, LBL, R, P, dname, readingDate } from '../state.js';
 
 export function shareOpts() {
   const rs = S.arts.map((a, i) => R(a, S.revs[i]));
-  const p = P(), name = dname(), d = new Date();
+  const p = P(), name = dname(), d = readingDate();
   let cards, headline, lines;
   if (S.mode === 'celtic') {
     cards = [{ art: rs[0].art, rev: rs[0].rev, label: 'หัวใจของเรื่อง' }, { art: rs[9].art, rev: rs[9].rev, label: 'ทิศทางสุดท้าย' }];

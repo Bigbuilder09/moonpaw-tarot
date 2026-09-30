@@ -3,7 +3,7 @@ import { petHTML } from '../card.js';
 import { INFO, POSITIONS } from '../data.js';
 import { ICON } from '../icons.js';
 import { ageText, compatInfo, EL_TH, BLESS, HEART, nextReward } from '../extras.js';
-import { D, S, thDate, esc, need, LBL, R, madame, POS_TIP, orient, SPREAD, P, dname, celticUntil, untilText, nextDay, nextMonth } from '../state.js';
+import { D, S, thDate, esc, need, LBL, R, madame, POS_TIP, orient, SPREAD, P, dname, celticUntil, untilText, nextDay, nextMonth, readingDate } from '../state.js';
 import { statsHTML, luckyHTML, adviceHTML, thumb } from './common.js';
 import { installNudgeHTML } from './install-ui.js';
 
@@ -35,7 +35,7 @@ export function resultHTML() {
   const rs = S.arts.filter((a) => INFO[a]).map((a, i) => R(a, S.revs[i]));
   if (rs.length < n) return `<div class="res"><h2>ไพ่ยังไม่ครบ</h2><div class="body">ลองเลือกไพ่ใหม่อีกครั้งนะจ๊ะ</div><button class="btn-primary" data-act="otherMode">กลับไปเลือกแบบดูดวง</button></div>`;
   const first = rs[0], mid = rs[Math.floor(rs.length / 2)], last = rs[rs.length - 1];
-  const d = new Date();
+  const d = readingDate();
   let h2 = `คำทำนายของน้อง${esc(dname())}`;
   let body = '';
   if (S.mode === 'heart') {
@@ -98,13 +98,14 @@ export function resultHTML() {
     <button class="sheet-close" data-act="back" aria-label="ปิด">${ICON.close}</button>
     <div class="res-head"><div class="muted">${resultTitle(d)}</div>
     <h2>${h2}</h2></div>
+    ${S.past ? `<div class="notice past-note">${ICON.book}<span>คำทำนายที่บันทึกไว้ในสมุดดวง</span></div>` : ''}
     ${repeat}${streakBanner}
     ${body}
     ${rewardBanner}
     ${installNudgeHTML()}
     <button class="btn-share" data-act="share"><span class="share-ico" aria-hidden="true">${ICON.sharePic}<i>♥</i></span><span class="share-txt"><b>แชร์ดวงเป็นรูป</b><small>ส่งต่อคำทำนายของเจ้าตัวเล็ก ♡</small><span class="share-tags" aria-hidden="true">IG STORY <i>✦</i> LINE</span></span><span class="share-go" aria-hidden="true">↗</span></button>
-    <p class="note saved-note">${ICON.check}<span>บันทึกลงสมุดดวงให้อัตโนมัติแล้วจ้ะ</span></p>
-    <div class="grid2"><button class="btn-outline" data-act="otherMode">ดูดวงแบบอื่น</button><button class="btn-outline" data-act="hub">กลับไปในร้าน</button></div>
+    ${S.past ? '' : `<p class="note saved-note">${ICON.check}<span>บันทึกลงสมุดดวงให้อัตโนมัติแล้วจ้ะ</span></p>`}
+    <div class="grid2">${S.past ? '<button class="btn-outline" data-act="back">กลับไปสมุดดวง</button>' : '<button class="btn-outline" data-act="otherMode">ดูดวงแบบอื่น</button>'}<button class="btn-outline" data-act="hub">กลับไปในร้าน</button></div>
     <p class="note">คำทำนายเพื่อความบันเทิง หากน้องมีอาการผิดปกติควรปรึกษาสัตวแพทย์</p>
   </div>`;
 }
