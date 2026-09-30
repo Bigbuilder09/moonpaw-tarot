@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "vite build",
     "build:single": "vite build --mode single",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test",
+    "release": "npm test && node scripts/release.mjs"
   },
   "devDependencies": {
     "vite": "^5.4.0",

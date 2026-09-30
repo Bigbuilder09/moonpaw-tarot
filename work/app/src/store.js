@@ -46,7 +46,9 @@ function migrate(o) {
     return Object.assign({}, e, { mk, id: m ? `${mk}-${p.id}-${m[2]}` : e.id });
   });
   // seed the visit counter from the daily readings already in the journal
-  const days = new Set(p.journal.filter((e) => e.mk === 'daily').map((e) => `${e.year}-${e.month}-${e.day}`));
+  // same YYYY-MM-DD form as the period keys (journal months are 0-based), so a day is never counted twice
+  const two = (n) => String(n).padStart(2, '0');
+  const days = new Set(p.journal.filter((e) => e.mk === 'daily').map((e) => `${e.year}-${two(e.month + 1)}-${two(e.day)}`));
   if (p.done.daily) days.add(p.done.daily.key);
   const n = { v: 2, met: !!o.met, ownerBirthday: o.ownerBirthday || '', pets: [p], activeId: p.id, collected: o.collected || [] };
   n.streak = { last: p.done.daily ? p.done.daily.key : '', count: p.done.daily ? 1 : 0, best: p.done.daily ? 1 : 0, days: days.size };

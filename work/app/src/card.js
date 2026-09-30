@@ -1,4 +1,8 @@
-import { CARD_INFO, BACK, FRAME, TOP, ART, PETS } from './art.js';
+import { CARD_INFO, BACK, FRAME, TOP, PETS } from './art.js';
+
+// Card-face pictures arrive a moment after start-up (see loadContent() in state.js).
+let ART = {};
+export function setCardArt(art) { ART = art || {}; }
 
 const svg = (inner, w, h) =>
   `<svg viewBox="0 0 200 330" width="${w}" height="${h}" style="position:absolute;left:0;top:0" aria-hidden="true">${inner}</svg>`;
@@ -33,7 +37,7 @@ function fillFront(key) {
   const fill = (s) =>
     s.replaceAll('{{tone}}', tone).replaceAll('{{bg}}', bg).replaceAll('{{num}}', num)
       .replaceAll('{{numSize}}', numSize).replaceAll('{{title}}', title).replaceAll('{{titleSize}}', titleSize);
-  return [fill(FRAME), ART[key], fill(TOP)];
+  return [fill(FRAME), ART[key] || '', fill(TOP)];
 }
 
 /** Returns the HTML for one tarot card, `w` px wide (height = w × 1.65). `back` picks a card-back design. */

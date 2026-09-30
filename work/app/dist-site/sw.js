@@ -1,6 +1,6 @@
 // SOULMYSTY offline support: the shop opens even without internet once it has been visited.
-// Bump CACHE when you want every installed copy to drop its old files.
-const CACHE = 'soulmysty-v3';
+// CACHE gets a fresh name on every build (see vite.config.js), so installed copies drop old files by themselves.
+const CACHE = 'soulmysty-20260930031624';
 const CORE = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -31,6 +31,8 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   // built files (hashed names), images and Google Fonts: serve from cache, fetch once
+  // music streams in pieces (range requests); Safari can't play it from a cached whole file, so leave it to the browser
+  if (url.pathname.endsWith('.mp3')) return;
   const fonts = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
   if (url.origin !== self.location.origin && !fonts) return;
   e.respondWith(
@@ -43,3 +45,4 @@ self.addEventListener('fetch', (e) => {
     }))
   );
 });
+

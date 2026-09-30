@@ -1,4 +1,5 @@
 node_modules/
 work/npm-cache/
-work/npm-cache/_cacache/
-work/npm-cache/_logs/
+# build output (made by npm run build / release; outputs/ is the deployed copy)
+work/app/dist/
+work/app/dist-site/

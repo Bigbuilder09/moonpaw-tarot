@@ -1,120 +1,26 @@
 import './soulmysty.css';
 import './app.css';
+import { initMochiMotion } from './mochi-motion.js';
 import exterior from './assets/shop-exterior.webp';
 import exteriorPortrait from './assets/exterior-portrait.webp';
 import interior from './assets/parlour-landscape.webp';
 import interiorPortrait from './assets/parlour-portrait.webp';
 import { cardHTML, petHTML, setBack } from './card.js';
-import { ARTS, INFO, GROUP_ADV, POSITIONS, MAJOR, SUIT_TH, RANK_TH, RANK_NUM, PETS, LINES, PHASES } from './data.js';
+import { ARTS, INFO, PETS, LINES } from './data.js';
 import * as store from './store.js';
 import { ICON } from './icons.js';
-import { READ, ITEM_FIX } from './readings.js';
-import { dayKey, addDays, isBirthday, daysToBirthday, ageText, bdayWindow, BDAY_WINDOW, compatInfo, EL_TH, BLESS, HEART, REWARDS, nextReward } from './extras.js';
-import { makeShareImage } from './share.js';
+import { isBirthday, bdayWindow, BDAY_WINDOW, REWARDS } from './extras.js';
 import * as sfx from './sfx.js';
-import { MEANING } from './meanings.js';
 import { initInstall, installKind, promptInstall, openExternal, askedExternal, isLine, persistStorage } from './install.js';
+import { D, S, persist, later, todayKey, monthKey, thDate, esc, shuffle, NEED, need, REV_CHANCE, MODE_TH, LBL, R, face, SPREAD, P, nameOf, dname, MAX_PETS, ADD_PET_LOCKED, availablePets, periodKey, doneFor, celticUntil, hasReward, liveStreak, markDay, newlyUnlocked, $, untilText, nextDay, nextMonth, loadContent } from './state.js';
+import { greetingLines } from './views/greeting.js';
+import { petTabsHTML } from './views/common.js';
+import { resultHTML } from './views/result.js';
+import { installHTML } from './views/install-ui.js';
+import { shareOpts, shareName, shareHTML } from './views/share-ui.js';
+import { journalHTML } from './views/journal.js';
+import { albumHTML, meaningHTML, detailHTML } from './views/album.js';
 
-/* ------------------------------------------------------------------ state */
-const D = store.load(); // persisted: household (pets + their readings/journals), shared album, streak, rewards
-const S = {             // session only
-  step: 'street', door: false, entered: false, line: 0, lines: LINES,
-  mode: 'daily', deck: [], picks: [], arts: [], revs: [], flipped: [], dealt: false, sealed: false, gen: 0, readingId: '',
-  repeat: false, newCards: [], newRewards: [], streakUp: 0, albumTab: 'major', detail: null,
-  confirmReset: false, confirmUnsave: false, confirmRemove: false, toast: '', share: null, install: null
-};
-const persist = () => store.save(D);
-const timers = [];
-const later = (fn, ms) => timers.push(setTimeout(fn, ms));
-
-const todayKey = () => dayKey(new Date());
-const yesterdayKey = () => dayKey(addDays(new Date(), -1));
-const monthKey = () => todayKey().slice(0, 7);
-const thDate = (d, opts, fb) => { try { return d.toLocaleDateString('th-TH', opts); } catch (e) { return fb; } };
-const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const shuffle = (a) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
-const NEED = { daily: 1, monthly: 3, celtic: 10, compat: 3, bday: 3, heart: 1 };
-const need = () => NEED[S.mode] || 1;
-const REV_CHANCE = 0.3; // share of cards that come up reversed (กลับหัว)
-const MODE_TH = { daily: 'รายวัน', monthly: 'รายเดือน', celtic: 'ดวงชะตารวม', compat: 'ดวงสมพงษ์', bday: 'ดวงวันเกิด', heart: 'เสียงในใจน้อง' };
-// position labels for the one- and three-card readings
-const LABELS = {
-  daily: ['ไพ่ประจำวัน'], heart: ['เสียงในใจน้อง'], monthly: PHASES,
-  compat: ['ใจน้อง', 'ใจเจ้าของ', 'สายใยของเรา'], bday: ['ปีที่ผ่านมา', 'ปีใหม่ของน้อง', 'พรวันเกิด']
-};
-const LBL = (i) => (LABELS[S.mode] || [])[i] || '';
-/** A card's reading in the orientation it was drawn, in the words written for this pet's species
- *  (cat or dog — see readings.js). `act` is the card's own to-do for the owner. */
-function R(a, rev, sp) {
-  sp = sp || P().pet;
-  const x = INFO[a];
-  const t = (READ[sp] || READ.cat)[a];
-  const i = rev ? 3 : 0;
-  return {
-    art: a, rev: !!rev, th: x.th, en: x.en, bg: x.bg, color: x.color, hex: x.hex, group: x.group,
-    item: (ITEM_FIX[sp] || {})[x.item] || x.item,
-    stats: rev ? x.stats.map((v, j) => Math.max(10, Math.min(100, v + [-15, 5, -10][j]))) : x.stats,
-    key: (rev ? x.rv : x.up).key, what: t[i], mean: t[i + 1], act: t[i + 2],
-    adv: t[i + 2] || GROUP_ADV[x.group][rev ? 1 : 0]
-  };
-}
-// Madame says the card's to-do in her own voice
-const madame = (act) => `${act} นะจ๊ะ`;
-// owner tips for the ten positions of the big spread, built around the card's own to-do
-const POS_TIP = [
-  (a) => `เริ่มจากตรงนี้ก่อนเลย ${a}`,
-  (a) => `ลองลดสิ่งรบกวนรอบตัวลงสักอย่าง แล้ว${a}`,
-  (a) => `ลองนึกย้อนว่าเรื่องนี้เริ่มตอนไหน จะได้เข้าใจน้องโดยไม่โทษเขา จากนั้น${a}`,
-  (a) => `พาน้องกลับมากิน เล่น นอนตามเวลาเดิมก่อน แล้ว${a}`,
-  (a) => `แนวโน้มนี้ยังเปลี่ยนได้นะ ลองทำแบบนี้สักสองสามวัน ${a}`,
-  (a) => `เตรียมตัวไว้ก่อนได้เลย ${a}`,
-  (a) => `ให้น้องเป็นคนเลือกจังหวะเอง แล้ว${a}`,
-  (a) => `ชวนคนในบ้านช่วยกันนะ ${a}`,
-  (a) => `ดูการกิน การนอน และภาษากายจริง ๆ ก่อนจะกังวลแทนน้อง แล้ว${a}`,
-  (a) => `ทำเรื่องเล็ก ๆ ให้ต่อเนื่องทุกวันก็พอ ${a}`
-];
-const face = (a, w, rev) => (rev ? `<div class="rev">${cardHTML(a, w)}</div>` : cardHTML(a, w));
-const orient = (rev) => `<span class="orient ${rev ? 'rv' : 'up'}">${rev ? 'กลับหัว' : 'ตั้งตรง'}</span>`;
-// Celtic Cross positions in a 322×384 box: [centre x, centre y, rotated]
-const SPREAD = [[100, 192], [100, 192, 1], [100, 300], [30, 192], [100, 84], [170, 192], [292, 334], [292, 238], [292, 142], [292, 46]];
-
-/* ------------------------------------------------------------------ household */
-const P = () => D.pets.find((p) => p.id === D.activeId) || D.pets[0];   // the pet being read for
-const nameOf = (p) => (p.name || '').trim() || 'เจ้าตัวเล็ก';
-const dname = () => nameOf(P());
-const MAX_PETS = 6;
-// Adding more pets will be a paid unlock later. Until then the button shows a lock.
-// Existing households that already have several pets keep them.
-const ADD_PET_LOCKED = true;
-// once-per-period readings: the key of the current period (celtic has none)
-function periodKey(mode, p = P()) {
-  if (mode === 'daily' || mode === 'heart') return todayKey();
-  if (mode === 'monthly' || mode === 'compat') return monthKey();
-  if (mode === 'bday') { const w = bdayWindow(p.petBirthday); return w.open ? w.year : ''; }
-  return '';
-}
-const CELTIC_WAIT = 24 * 3600 * 1000; // the ten-card spread opens once every 24 hours
-const doneFor = (mode, p = P()) => {
-  const r = p.done[mode];
-  if (mode === 'celtic') return r && r.at && Date.now() - r.at < CELTIC_WAIT ? r : null;
-  const k = periodKey(mode, p); return k && r && r.key === k ? r : null;
-};
-const celticUntil = (p = P()) => ((p.done.celtic && p.done.celtic.at) || 0) + CELTIC_WAIT;
-const hasReward = (id) => { const r = REWARDS.find((x) => x.id === id); return !!r && D.streak.days >= r.days; };
-// a streak is still alive if the last daily reading was today or yesterday
-const liveStreak = () => (D.streak.last === todayKey() || D.streak.last === yesterdayKey() ? D.streak.count : 0);
-function markDay() {
-  const st = D.streak, t = todayKey();
-  if (st.last === t) return false;
-  st.count = st.last === yesterdayKey() ? st.count + 1 : 1;
-  st.last = t; st.days += 1; st.best = Math.max(st.best, st.count);
-  return true;
-}
-function newlyUnlocked() {
-  const fresh = REWARDS.filter((r) => r.days > 0 && D.streak.days >= r.days && !D.rewardsSeen.includes(r.id));
-  D.rewardsSeen = D.rewardsSeen.concat(fresh.map((r) => r.id));
-  return fresh;
-}
 // repair older saves: a once-per-period reading that was opened always belongs in the album
 D.pets.forEach((p) => Object.entries(p.done).filter(([m]) => m !== 'celtic').forEach(([, r]) => (r.arts || []).forEach((a) => { if (!D.collected.includes(a)) D.collected.push(a); })));
 setBack(D.back);
@@ -160,7 +66,7 @@ stage.innerHTML = `
   </div>
 </div>
 <button class="music-btn street-music" data-act="music" aria-label="เปิดหรือปิดเพลง"></button>
-<audio id="bgm" loop preload="none" src="./moonpetalmedia-parlor-of-secrets-vintage-witchy-tarot-instrumental-537898.mp3"></audio>
+<audio id="bgm" loop preload="none" src="./bgm-fairy-tale.mp3"></audio>
 
 <div id="hint" class="panel off hint">${ICON.ball}<div id="hintText"></div></div>
 
@@ -253,7 +159,6 @@ stage.innerHTML = `
 <div id="installBox"></div>
 `;
 
-const $ = (id) => document.getElementById(id);
 const setHTML = (el, html) => { if (el._html !== html) { el._html = html; el.innerHTML = html; } };
 const onoff = (el, on) => { el.classList.toggle('on', !!on); el.classList.toggle('off', !on); };
 
@@ -286,17 +191,6 @@ function refreshBacks() {
 refreshBacks();
 
 /* ------------------------------------------------------------------ countdown */
-const pad2 = (n) => String(n).padStart(2, '0');
-function untilText(target) {
-  let ms = Math.max(0, target - Date.now());
-  const d = Math.floor(ms / 86400000); ms -= d * 86400000;
-  const h = Math.floor(ms / 3600000); ms -= h * 3600000;
-  const m = Math.floor(ms / 60000); ms -= m * 60000;
-  const sec = Math.floor(ms / 1000);
-  return (d > 0 ? d + ' วัน ' : '') + pad2(h) + ':' + pad2(m) + ':' + pad2(sec);
-}
-const nextDay = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime(); };
-const nextMonth = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime(); };
 let lastDayKey = todayKey();
 const cdHTML = (txt) => `<span class="cd-l">${ICON.clock}เปิดใหม่ได้ใน</span><b>${txt}</b>`;
 function tickCountdown() {
@@ -316,44 +210,6 @@ function tickCountdown() {
 setInterval(tickCountdown, 1000);
 
 /* ------------------------------------------------------------------ Madame remembers */
-// Lines Madame says when a known visitor walks back in.
-function greetingLines() {
-  const p = P(), name = dname(), now = new Date(), h = now.getHours();
-  const tod = h < 11 ? 'อรุณสวัสดิ์' : h < 17 ? 'สวัสดียามบ่าย' : 'ค่ำนี้ดาวสวยเชียว';
-  const hello = [
-    `เมี้ยว~ ${tod}จ้ะ น้อง${name} กลับมาหาข้าอีกแล้ว`,
-    `${tod}จ้ะ ข้ารู้อยู่แล้วว่าวันนี้น้อง${name}ต้องแวะมา ลูกแก้วกระซิบบอก`,
-    `อ้าว น้อง${name} มาแล้ว! ${tod}จ้ะ เข้ามานั่งก่อน`,
-    p.pet === 'dog' ? `${tod}จ้ะ ได้ยินเสียงหางน้อง${name}กระดิกมาแต่ไกลเลย` : `${tod}จ้ะ น้อง${name} ย่องมาเงียบ ๆ แบบแมวแท้ ข้าก็ยังรู้นะ`
-  ];
-  const lines = [hello[now.getDate() % hello.length]];
-  const extra = [];
-  // birthdays come first
-  if (isBirthday(p.petBirthday, now)) {
-    const age = ageText(p.petBirthday, now);
-    extra.push(`วันนี้วันเกิดน้อง${name}! สุขสันต์วันเกิด${age ? 'ครบ ' + age : ''}จ้ะ ขอให้น้องแข็งแรง มีความสุขมาก ๆ นะ`);
-  } else {
-    const dd = daysToBirthday(p.petBirthday, now);
-    if (dd > 0 && dd <= 7) extra.push(`อีก ${dd} วันก็วันเกิดน้อง${name}แล้วนะ เตรียมของขวัญไว้หรือยังจ๊ะ`);
-  }
-  D.pets.filter((q) => q.id !== p.id && isBirthday(q.petBirthday, now)).forEach((q) => extra.push(`วันนี้วันเกิดน้อง${nameOf(q)}ด้วยนะ! อย่าลืมกอดน้องแน่น ๆ ล่ะ`));
-  if (isBirthday(D.ownerBirthday, now)) extra.push('แล้ววันนี้ก็เป็นวันเกิดของเจ้าด้วยนี่! ขอให้เจ้ากับน้องมีความสุขมาก ๆ นะจ๊ะ');
-  // yesterday's card
-  const y = p.journal.find((e) => e.mk === 'daily' && e.id.endsWith(yesterdayKey()));
-  if (y && INFO[y.cards[0]]) extra.push(`เมื่อวานน้องได้${INFO[y.cards[0]].th} “${y.key}” เป็นอย่างที่ไพ่บอกไหมจ๊ะ`);
-  // streak
-  const st = D.streak;
-  if (st.last === todayKey()) extra.push(`วันนี้เปิดไพ่ไปแล้ว มาหาข้าต่อเนื่อง ${st.count} วันเลยนะ เก่งมาก`);
-  else if (st.last === yesterdayKey() && st.count > 1) extra.push(`มาหาข้าติดกัน ${st.count} วันแล้ว วันนี้เปิดไพ่ต่อเป็นวันที่ ${st.count + 1} กันเถอะ`);
-  else if (st.last === yesterdayKey()) extra.push('เมื่อวานก็มาหาข้า วันนี้เปิดไพ่อีกครั้งจะได้นับเป็น 2 วันติดกันเลยนะ');
-  else if (st.days > 0) extra.push('หายไปหลายวันเลย ข้าคิดถึงนะ วันนี้มาเริ่มนับวันใหม่กันจ้ะ');
-  const nr = nextReward(st.days);
-  if (nr && st.last !== todayKey()) extra.push(`อีก ${nr.days - st.days} วันจะได้ “${nr.name}” นะ`);
-  // other pets still waiting
-  const waiting = D.pets.filter((q) => q.id !== p.id && !doneFor('daily', q)).map(nameOf);
-  if (waiting.length) extra.push(`วันนี้น้อง${waiting.slice(0, 2).join(' กับน้อง')} ยังไม่ได้เปิดไพ่เลยนะ`);
-  return lines.concat(extra.slice(0, 3));
-}
 
 /* ------------------------------------------------------------------ flow */
 function go(step, extra) {
@@ -387,7 +243,10 @@ const ACT = {
   door() {
     if (S.step !== 'street' || S.door) return;
     S.door = true; render();
-    later(() => go('greet', { line: 0, lines: D.met ? greetingLines() : LINES }), 850);
+    // the door animation and the shop's content load at the same time
+    Promise.all([loadContent(), new Promise((ok) => later(ok, 850))])
+      .then(() => go('greet', { line: 0, lines: D.met ? greetingLines() : LINES }))
+      .catch(() => { S.door = false; toast('เปิดร้านไม่สำเร็จ ลองเช็กอินเทอร์เน็ตแล้วแตะประตูอีกครั้งนะจ๊ะ'); });
   },
   next() {
     if (S.line < S.lines.length - 1) { S.line++; render(); }
@@ -407,13 +266,13 @@ const ACT = {
   editPet() { if (S.step !== 'pet' && S.step !== 'street') { fillForm(); go('pet'); } },
   pet(arg) { if (arg !== 'cat' && arg !== 'dog') return; P().pet = arg; persist(); render(); },
   switchPet(arg) {
-    if (arg === D.activeId) return;
+    if (ADD_PET_LOCKED || arg === D.activeId || !availablePets().some((p) => p.id === arg)) return;
     if (S.step === 'pet') syncForm();
     D.activeId = arg; persist();
     if (S.step === 'pet') { fillForm(); go('pet'); } else render();
   },
   addPet() {
-    if (ADD_PET_LOCKED) { toast('การเพิ่มน้องตัวใหม่จะเปิดให้เร็ว ๆ นี้ รอติดตามนะจ๊ะ'); return; }
+    if (ADD_PET_LOCKED) { toast('ตอนนี้ดูแลน้องได้ 1 ตัวจ้ะ ช่องเพิ่มน้องยังล็อกอยู่'); return; }
     if (D.pets.length >= MAX_PETS) return;
     syncForm();
     const p = store.newPet();
@@ -422,7 +281,7 @@ const ACT = {
     later(() => $('petName').focus(), 60);
   },
   removePet() {
-    if (D.pets.length < 2) return;
+    if (ADD_PET_LOCKED || availablePets().length < 2) return;
     if (!S.confirmRemove) { S.confirmRemove = true; render(); return; }
     D.pets = D.pets.filter((p) => p.id !== D.activeId);
     D.activeId = D.pets[0].id; persist();
@@ -528,6 +387,7 @@ const ACT = {
     if (S.share && S.share.busy) return;
     S.share = { busy: true }; render();
     try {
+      const { makeShareImage } = await import('./share.js'); // loaded only when someone shares
       const blob = await makeShareImage(shareOpts());
       S.share = { url: URL.createObjectURL(blob), blob };
     } catch (e) {
@@ -631,17 +491,6 @@ $('petBirthday').addEventListener('change', (e) => { P().petBirthday = e.target.
 $('ownerBirthday').addEventListener('change', (e) => { D.ownerBirthday = e.target.value; });
 
 /* ------------------------------------------------------------------ render */
-// the household row: one chip per pet (+ add button in the pet sheet)
-function petTabsHTML(withAdd) {
-  if (!withAdd && D.pets.length < 2) return '';
-  return D.pets.map((p) => {
-    const sel = p.id === D.activeId;
-    const dot = !withAdd && !doneFor('daily', p) ? '<i class="wait-dot" title="ยังไม่ได้เปิดไพ่วันนี้"></i>' : '';
-    return `<button class="pet-tab${sel ? ' sel' : ''}" data-act="switchPet" data-arg="${p.id}" aria-pressed="${sel}">${petHTML(p.pet, 26)}<span>${esc(nameOf(p))}</span>${dot}</button>`;
-  }).join('') + (withAdd && D.met && D.pets.length < MAX_PETS ? (ADD_PET_LOCKED
-      ? `<button class="pet-tab add locked" data-act="addPet" aria-label="เพิ่มน้อง (ล็อกอยู่ เปิดให้เร็ว ๆ นี้)">${ICON.lock}<span>เพิ่มน้อง</span></button>`
-      : `<button class="pet-tab add" data-act="addPet">${ICON.plus}<span>เพิ่มน้อง</span></button>`) : '');
-}
 // twinkling stars / falling petals over the parlour, unlocked as rewards
 const DECO_POS = [[8, 12], [22, 6], [37, 15], [52, 5], [66, 13], [81, 7], [93, 18], [14, 30], [31, 26], [58, 24], [76, 29], [89, 36], [5, 45], [45, 36], [70, 42], [97, 52]];
 function decoHTML() {
@@ -693,7 +542,7 @@ function render() {
   $('chipName').textContent = dname();
 
   // hint bubble
-  const waiting = D.pets.filter((q) => q.id !== p.id && !doneFor('daily', q)).map(nameOf);
+  const waiting = availablePets().filter((q) => q.id !== p.id && !doneFor('daily', q)).map(nameOf);
   const shuffleHint = {
     daily: `ตั้งจิตถึงน้อง${dname()} แล้วเลือกไพ่ 1 ใบ`,
     heart: `ตั้งใจฟังเสียงในใจน้อง${dname()} แล้วเลือกไพ่ 1 ใบ`,
@@ -707,7 +556,7 @@ function render() {
       : !readToday ? `แตะจุดที่ส่องแสงในร้านได้เลย วันนี้น้อง${dname()} ยังไม่ได้ดูดวงนะ`
       : waiting.length ? `น้อง${dname()}ดูดวงวันนี้แล้ว แต่น้อง${waiting[0]}ยังไม่ได้ดูนะ แตะชื่อน้องมุมขวาบนเพื่อสลับ`
       : `ดูดวงวันนี้แล้วนะ น้อง${dname()} จะแวะดูสมุดหรืออัลบั้มก็ได้จ้ะ`,
-    pet: D.met ? (ADD_PET_LOCKED ? (D.pets.length > 1 ? 'แก้ข้อมูลหรือสลับน้องได้ที่นี่จ้ะ' : 'แก้ข้อมูลน้องได้ที่นี่จ้ะ') : 'แก้ข้อมูล สลับ หรือเพิ่มน้องในบ้านได้ที่นี่จ้ะ') : 'เจ้าตัวเล็กของเจ้าชื่ออะไร เป็นน้องอะไรเอ่ย?',
+    pet: D.met ? (ADD_PET_LOCKED ? 'แก้ข้อมูลน้องได้ที่นี่จ้ะ ตอนนี้ใช้งานได้ 1 ตัว' : 'แก้ข้อมูล สลับ หรือเพิ่มน้องในบ้านได้ที่นี่จ้ะ') : 'เจ้าตัวเล็กของเจ้าชื่ออะไร เป็นน้องอะไรเอ่ย?',
     mode: `น้อง${dname()} อยากรู้ดวงแบบไหนดีจ๊ะ`,
     shuffle: shuffleHint,
     reveal: allFlipped ? 'ไพ่พูดแล้ว… มาฟังคำทำนายกันเถอะ' : n === 10 ? 'แตะไพ่ทีละใบตามลำดับ หรือเปิดทั้งหมดพร้อมกันก็ได้จ้ะ' : 'แตะไพ่เพื่อเปิดดวงชะตา'
@@ -724,12 +573,12 @@ function render() {
 
   // pet sheet
   onoff($('petSheet'), s === 'pet');
-  $('petTitle').textContent = D.met ? 'น้อง ๆ ในบ้าน' : 'น้องคือใครเอ่ย?';
+  $('petTitle').textContent = D.met ? 'น้องของฉัน' : 'น้องคือใครเอ่ย?';
   setHTML($('petTabs'), D.met ? petTabsHTML(true) : '');
   setHTML($('petGrid'), PETS.map((k) => `<button class="opt pet-opt${p.pet === k.k ? ' sel' : ''}" data-act="pet" data-arg="${k.k}" aria-pressed="${p.pet === k.k}">${petHTML(k.k, 64)}<span>${k.th}</span></button>`).join(''));
   $('petCta').textContent = D.met ? 'บันทึก' : 'เข้าไปในร้าน';
   $('petClose').hidden = !D.met;
-  $('removeBtn').style.display = D.met && D.pets.length > 1 ? '' : 'none';
+  $('removeBtn').style.display = D.met && !ADD_PET_LOCKED && availablePets().length > 1 ? '' : 'none';
   $('removeBtn').textContent = S.confirmRemove ? `แตะอีกครั้งเพื่อลบน้อง${dname()} และสมุดดวงของน้อง` : `ลบน้อง${dname()}ออกจากบ้าน`;
   $('resetBtn').style.display = D.met ? '' : 'none';
   $('resetBtn').textContent = S.confirmReset ? 'แตะอีกครั้งเพื่อยืนยันการล้างข้อมูล' : 'ล้างข้อมูลทั้งหมด';
@@ -818,20 +667,6 @@ function render() {
   setHTML($('installBox'), S.install ? installHTML() : '');
 }
 
-const STATS = [['พลังงาน', '#F0B955'], ['ความขี้อ้อน', '#EE9FB4'], ['ความซน', '#9C86D4']];
-function statsHTML(rs) {
-  const avg = [0, 1, 2].map((j) => Math.round(rs.reduce((t, x) => t + x.stats[j], 0) / rs.length));
-  return `<div class="box"><div class="mid">ค่าพลังของน้อง</div>
-      ${STATS.map((st, j) => `<div class="stat"><span>${st[0]}</span><div class="track"><div class="bar" style="width:${avg[j]}%;background:${st[1]}"></div></div><em>${avg[j]}</em></div>`).join('')}
-    </div>`;
-}
-const luckyHTML = (x) => `<div class="grid2">
-      <div class="box"><div class="muted">สีมงคล</div><div class="row"><span class="swatch" style="background:${x.hex}"></span><b>${x.color}</b></div></div>
-      <div class="box"><div class="muted">ของนำโชค</div><div class="row">${ICON.gift}<b>${x.item}</b></div></div>
-    </div>`;
-const adviceHTML = (label, text) => `<div class="advice">${ICON.mochi}<div><div class="muted strong">${label}</div><div class="quote">“${text}”</div></div></div>`;
-const thumb = (x, w) => `<button class="card-btn" data-act="open" data-arg="${x.art}" aria-label="ดูความหมาย ${x.th}">${face(x.art, w, x.rev)}</button>`;
-
 // Lay the 78 face-down cards in gently arched, overlapping rows that fit the screen width.
 function layoutDeck78() {
   const box = $('deck78');
@@ -851,107 +686,6 @@ function layoutDeck78() {
     b.style.opacity = picked ? 0 : 1;
     b.style.transitionDelay = (S.dealt ? i * 9 : 0) + 'ms';
   });
-}
-
-const REPEAT_TH = {
-  daily: 'วันนี้น้องเปิดไพ่ไปแล้ว นี่คือไพ่ประจำวันของน้องจ้ะ',
-  heart: 'วันนี้ฟังเสียงในใจน้องไปแล้ว นี่คือไพ่ของวันนี้จ้ะ',
-  monthly: 'เดือนนี้น้องเปิดไพ่ไปแล้ว นี่คือดวงประจำเดือนของน้องจ้ะ',
-  compat: 'เดือนนี้ดูดวงสมพงษ์ไปแล้ว นี่คือไพ่ของเดือนนี้จ้ะ',
-  bday: 'ดวงวันเกิดปีนี้เปิดไปแล้ว นี่คือไพ่วันเกิดของน้องจ้ะ',
-  celtic: 'ดวงชะตารวมเปิดได้ทุก 24 ชั่วโมง นี่คือไพ่ 10 ใบชุดล่าสุดของน้องจ้ะ'
-};
-function resultTitle(d) {
-  return {
-    daily: thDate(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }, 'วันนี้'),
-    heart: 'เสียงในใจน้อง · ' + thDate(d, { day: 'numeric', month: 'long' }, 'วันนี้'),
-    monthly: 'ดวงประจำเดือน' + thDate(d, { month: 'long', year: 'numeric' }, ''),
-    compat: 'ดวงสมพงษ์ประจำเดือน' + thDate(d, { month: 'long', year: 'numeric' }, ''),
-    bday: 'ดวงวันเกิดประจำปี ' + thDate(d, { year: 'numeric' }, ''),
-    celtic: 'ดวงชะตารวม 10 ใบ · ' + thDate(d, { day: 'numeric', month: 'short' }, '')
-  }[S.mode];
-}
-const phaseHTML = (rs) => rs.map((x, k) => `<div class="lineIn phase" style="background:${x.bg};animation-delay:${k * 120}ms">${thumb(x, 56)}<div><div class="muted">${LBL(k)} · ${x.th} ${orient(x.rev)}</div><div class="mid">${x.key}</div><div class="body">${x.what}</div><div class="body soft">${x.mean}</div></div></div>`).join('');
-
-function resultHTML() {
-  const n = need();
-  const p = P();
-  const rs = S.arts.filter((a) => INFO[a]).map((a, i) => R(a, S.revs[i]));
-  if (rs.length < n) return `<div class="res"><h2>ไพ่ยังไม่ครบ</h2><div class="body">ลองเลือกไพ่ใหม่อีกครั้งนะจ๊ะ</div><button class="btn-primary" data-act="otherMode">กลับไปเลือกแบบดูดวง</button></div>`;
-  const first = rs[0], mid = rs[Math.floor(rs.length / 2)], last = rs[rs.length - 1];
-  const d = new Date();
-  let h2 = `คำทำนายของน้อง${esc(dname())}`;
-  let body = '';
-  if (S.mode === 'heart') {
-    h2 = `น้อง${esc(dname())}อยากบอกว่า…`;
-    body = `<div class="lineIn heart-talk">${petHTML(p.pet, 64)}<div class="bubble"><div class="quote">“${HEART[first.group][first.rev ? 1 : 0]}”</div></div></div>
-      <div class="main-card" style="background:${first.bg}">${thumb(first, 80)}<div><div class="muted">${first.th} ${orient(first.rev)}</div><div class="big">${first.key}</div></div></div>
-      <div class="box story"><div class="muted strong">สิ่งที่น้องกำลังรู้สึก</div><div class="body">${first.what}</div><div class="body">${first.mean}</div></div>
-      ${adviceHTML('มาดามโมจิแปลให้เจ้าของ', madame(first.act))}`;
-  } else if (n === 1) {
-    body = `<div class="lineIn main-card" style="background:${first.bg}">${thumb(first, 96)}<div><div class="muted">${first.th} ${orient(first.rev)}</div><div class="big">${first.key}</div></div></div>
-      <div class="box story"><div class="muted strong">น้องเป็นแบบนี้</div><div class="body">${first.what}</div><div class="body">${first.mean}</div></div>
-      ${statsHTML(rs)}${luckyHTML(first)}
-      ${adviceHTML('มาดามโมจิฝากบอกเจ้าของ', madame(first.act))}`;
-  } else if (S.mode === 'compat') {
-    h2 = `น้อง${esc(dname())} กับเจ้าของ`;
-    const ci = compatInfo(p.petBirthday, D.ownerBirthday, rs);
-    body = (ci ? `<div class="lineIn compat-box">
-        <div class="compat-pair">${petHTML(p.pet, 54)}<span class="compat-heart">${ICON.hearts}</span><span class="owner-ico">${ICON.person}</span></div>
-        <div class="compat-score"><b>${ci.score}%</b><span>${ci.title}</span></div>
-        <div class="track"><div class="bar" style="width:${ci.score}%;background:linear-gradient(90deg,#F2A7C0,#B592E0)"></div></div>
-        <div class="body">${ci.text}</div>
-      </div>
-      <div class="grid2">
-        <div class="box sign-box"><div class="muted">น้อง${esc(dname())}</div><b>ราศี${ci.pet.name} · ธาตุ${EL_TH[ci.pet.el]}</b><div class="body soft">${ci.pet.trait}</div></div>
-        <div class="box sign-box"><div class="muted">เจ้าของ</div><b>ราศี${ci.owner.name} · ธาตุ${EL_TH[ci.owner.el]}</b><div class="body soft">${ci.owner.trait}</div></div>
-      </div>` : '') + phaseHTML(rs) + adviceHTML('สายใยของเจ้ากับน้องต้องการ', madame(last.act));
-  } else if (S.mode === 'bday') {
-    h2 = `ดวงวันเกิดน้อง${esc(dname())}`;
-    const age = ageText(p.petBirthday, d);
-    body = `<div class="lineIn bday-box">${ICON.cake}<div><div class="big">สุขสันต์วันเกิดน้อง${esc(dname())}${age ? ' ครบ ' + age : ''}!</div><div class="body">ข้าเปิดไพ่ย้อนดูปีที่ผ่านมา มองปีใหม่ของน้อง และขอพรให้ด้วยนะจ๊ะ · ไพ่วันเกิดอ่านแบบตั้งตรงทั้งหมด เพราะเป็นไพ่อวยพร</div></div></div>` +
-      phaseHTML(rs) + luckyHTML(mid) + adviceHTML('พรวันเกิดจากมาดามโมจิ', BLESS[last.group]);
-  } else if (n === 3) {
-    body = `<div class="theme"><div class="muted">ธีมของเดือน</div><div class="big">${mid.key}</div></div>` +
-      phaseHTML(rs) + statsHTML(rs) + luckyHTML(first) + adviceHTML('มาดามโมจิฝากบอกเจ้าของ', madame(last.act));
-  } else {
-    const POS = POSITIONS;
-    body = `<div class="theme"><div class="muted">หัวใจของเรื่อง · ใบที่ 1 และ 2</div><div class="big">${rs[0].key}</div><div class="body">ท่ามกลางแรงที่เข้ามา: ${rs[1].key}</div></div>
-      <div class="theme mint"><div class="muted">ทิศทางสุดท้าย · ใบที่ 10</div><div class="big">${rs[9].key}</div></div>
-      <div class="spread-mini">${rs.map((x, k) => { const q = SPREAD[k]; return `<div class="spread-card${q[2] ? ' cross' : ''}" style="left:${q[0] - 28}px;top:${q[1] - 46}px"><span class="pos-num">${k + 1}</span>${thumb(x, 56)}</div>`; }).join('')}</div>
-      <p class="note">ตามตำรา ใบที่ 2 “แรงที่ไขว้เข้ามา” อ่านแบบตั้งตรงเสมอ เพราะเป็นแรงที่เกิดขึ้นจริงตรงหน้า</p>
-      ${rs.map((x, k) => `<section class="pos-block lineIn" style="animation-delay:${Math.min(k, 5) * 80}ms">
-        <div class="pos-head"><span class="num" style="background:${x.bg}">${k + 1}</span><div><b>${POS[k][0]}</b><div class="muted">${POS[k][2]}</div></div></div>
-        <div class="pos-card">${thumb(x, 52)}<div><div class="muted">${x.th} ${orient(x.rev)}</div><div class="mid">${x.key}</div></div></div>
-        <div class="body">${POS[k][3]} ${x.what}</div>
-        <div class="body soft">${x.mean}</div>
-        <div class="owner-tip"><b>คำแนะนำสำหรับเจ้าของ · ${POS[k][4]}</b><div>${POS_TIP[k](x.act)}</div></div>
-      </section>`).join('')}
-      ${statsHTML(rs)}${luckyHTML(last)}
-      ${adviceHTML('มาดามโมจิสรุปให้', madame(last.act))}
-      <p class="note">ไพ่จากดวงชะตารวมไม่นับเข้าอัลบั้ม สะสมไพ่ได้จากดวงรายวันและรายเดือนนะจ๊ะ</p>`;
-  }
-  const monthly = S.mode === 'monthly' || S.mode === 'compat';
-  const repeat = S.repeat && REPEAT_TH[S.mode] ? `<div class="notice">${REPEAT_TH[S.mode]}${S.mode === 'bday'
-    ? '<div class="notice-cd">เจอกันใหม่ในวันเกิดปีหน้านะจ๊ะ</div>'
-    : `<div class="notice-cd">${ICON.clock}<span>เปิดใหม่ได้ใน <b id="resultCd">${untilText(monthly ? nextMonth() : S.mode === 'celtic' ? celticUntil() : nextDay())}</b></span></div>`}</div>` : '';
-  const nr = nextReward(D.streak.days);
-  const streakBanner = S.streakUp ? `<div class="pop streak-banner">${ICON.flame}<span><b>${S.streakUp > 1 ? `มาหามาดามต่อเนื่อง ${S.streakUp} วัน!` : 'เริ่มนับวันแรกแล้ว! พรุ่งนี้มาต่อนะ'}</b><small>เปิดไพ่รายวันมาแล้ว ${D.streak.days} วัน${nr ? ` · อีก ${nr.days - D.streak.days} วันได้ “${nr.name}”` : ''}</small></span></div>` : '';
-  const rewardBanner = S.newRewards.length ? `<button class="pop new-cards reward" data-act="goJournal">${ICON.gift}<span><b>ปลดล็อกรางวัลใหม่!</b><small>${S.newRewards.map((r) => r.name).join(' · ')} · แตะเพื่อดูในสมุดดวง</small></span></button>` : '';
-  return `<div class="res">
-    <button class="sheet-close" data-act="back" aria-label="ปิด">${ICON.close}</button>
-    <div class="res-head"><div class="muted">${resultTitle(d)}</div>
-    <h2>${h2}</h2></div>
-    ${repeat}${streakBanner}
-    ${body}
-    ${rewardBanner}
-    ${S.newCards.length ? `<button class="pop new-cards" data-act="goAlbum"><svg class="shine" width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><path d="M18 3 Q18 18 33 18 Q18 18 18 33 Q18 18 3 18 Q18 18 18 3Z" fill="#F0B955" stroke="#6B5577" stroke-width="2" stroke-linejoin="round"/></svg><span><b>ได้ไพ่ใหม่เข้าอัลบั้ม +${S.newCards.length}</b><small>สะสมแล้ว ${D.collected.length}/78 ใบ · แตะเพื่อดูอัลบั้ม</small></span></button>` : ''}
-    ${installNudgeHTML()}
-    <button class="btn-share" data-act="share"><span class="share-ico">${ICON.sharePic}</span><span class="share-txt"><b>แชร์ดวงเป็นรูป</b><small>ขนาดพอดีสตอรี่ IG และ LINE</small></span><span class="share-go" aria-hidden="true">›</span></button>
-    <p class="note saved-note">${ICON.check}<span>บันทึกลงสมุดดวงให้อัตโนมัติแล้วจ้ะ</span></p>
-    <div class="grid2"><button class="btn-outline" data-act="otherMode">ดูดวงแบบอื่น</button><button class="btn-outline" data-act="hub">กลับไปในร้าน</button></div>
-    <p class="note">คำทำนายเพื่อความบันเทิง หากน้องมีอาการผิดปกติควรปรึกษาสัตวแพทย์</p>
-  </div>`;
 }
 
 /* ------------------------------------------------------------------ background music */
@@ -979,193 +713,10 @@ document.addEventListener('visibilitychange', syncMusic);
 syncMusic();
 
 /* ------------------------------------------------------------------ install (PWA) */
-// shown under a finished reading, at most once every 3 days after "ไว้ทีหลัง"
-function installNudgeHTML() {
-  const k = installKind();
-  if (!k) return '';
-  if (D.installSnooze && (new Date(todayKey()) - new Date(D.installSnooze)) / 86400000 < 3) return '';
-  return `<div class="install-card">${ICON.phone}<span><b>เก็บร้านไว้บนหน้าจอมือถือ</b><small>เปิดหามาดามได้ในแตะเดียว เล่นได้แม้ไม่มีเน็ต และข้อมูลของน้องปลอดภัยกว่าเดิม</small></span>
-    <div class="install-acts"><button class="btn-primary small" data-act="install">ติดตั้ง</button><button class="link-btn" data-act="installLater">ไว้ทีหลัง</button></div></div>`;
-}
-function installHTML() {
-  const k = S.install;
-  let body;
-  if (k === 'ios') {
-    body = `<h2>ติดตั้งร้านไว้บนหน้าจอ</h2>
-      <ol class="steps">
-        <li><span class="step-n">1</span><div>แตะปุ่ม <b>แชร์</b> ${ICON.share} ของ Safari <small>(แถบล่างของจอ · ถ้าใช้ Chrome อยู่มุมขวาบน)</small></div></li>
-        <li><span class="step-n">2</span><div>เลื่อนลงแล้วเลือก <b>“เพิ่มไปยังหน้าจอโฮม”</b></div></li>
-        <li><span class="step-n">3</span><div>แตะ <b>“เพิ่ม”</b> มุมขวาบน แล้วเปิดร้านจากไอคอนมาดามโมจิได้เลย</div></li>
-      </ol>
-      <p class="note">เปิดจากไอคอนบนหน้าจอเสมอนะ ข้อมูลของน้องจะไม่ถูก Safari ลบเมื่อไม่ได้เข้าหลายวัน</p>`;
-  } else if (isLine) {
-    body = `<h2>เปิดในเบราว์เซอร์ก่อนนะ</h2>
-      <div class="body">ในแอป LINE ติดตั้งร้านไม่ได้ ต้องเปิดใน Safari หรือ Chrome ก่อน แล้วค่อยเพิ่มไว้บนหน้าจอ</div>
-      ${D.met ? '<div class="notice">ข้อมูลที่เล่นในแอป LINE จะไม่ย้ายตามไปที่เบราว์เซอร์ ในเบราว์เซอร์จะเริ่มต้นใหม่จ้ะ</div>' : ''}
-      <button class="btn-primary" data-act="openBrowser">เปิดในเบราว์เซอร์</button>`;
-  } else {
-    body = `<h2>เปิดในเบราว์เซอร์ก่อนนะ</h2>
-      <div class="body">แอปนี้ติดตั้งร้านไม่ได้ แตะเมนู <b>⋯</b> มุมขวาบน แล้วเลือก <b>“เปิดในเบราว์เซอร์”</b> จากนั้นค่อยเพิ่มร้านไว้บนหน้าจอ</div>
-      ${D.met ? '<div class="notice">ข้อมูลที่เล่นในแอปนี้จะไม่ย้ายตามไปที่เบราว์เซอร์ ในเบราว์เซอร์จะเริ่มต้นใหม่จ้ะ</div>' : ''}`;
-  }
-  return `<div class="modal install-modal" role="dialog" aria-modal="true" aria-label="ติดตั้งร้านไว้บนหน้าจอ">
-    <button class="modal-bg" data-act="installClose" aria-label="ปิด"></button>
-    <div class="modal-box install-box"><img class="install-ico" src="./icons/icon-192.png" alt="" width="84" height="84">${body}<button class="link-btn" data-act="installClose">ปิด</button></div>
-  </div>`;
-}
 
 /* ------------------------------------------------------------------ share image */
-function shareOpts() {
-  const rs = S.arts.map((a, i) => R(a, S.revs[i]));
-  const p = P(), name = dname(), d = new Date();
-  let cards, headline, lines;
-  if (S.mode === 'celtic') {
-    cards = [{ art: rs[0].art, rev: rs[0].rev, label: 'หัวใจของเรื่อง' }, { art: rs[9].art, rev: rs[9].rev, label: 'ทิศทางสุดท้าย' }];
-    headline = rs[9].key; lines = [`หัวใจของเรื่อง: ${rs[0].key}`, rs[9].mean];
-  } else if (rs.length === 3) {
-    cards = rs.map((x, i) => ({ art: x.art, rev: x.rev, label: LBL(i) }));
-    if (S.mode === 'compat') {
-      const ci = compatInfo(p.petBirthday, D.ownerBirthday, rs);
-      headline = ci ? `เข้ากัน ${ci.score}% · ${ci.title}` : rs[2].key;
-      lines = ci ? [ci.text] : rs.map((x, i) => `${LBL(i)}: ${x.key}`);
-    } else if (S.mode === 'bday') {
-      const age = ageText(p.petBirthday, d);
-      headline = `สุขสันต์วันเกิด${age ? 'ครบ ' + age : ''}!`; lines = [BLESS[rs[2].group], `ปีใหม่ของน้อง: ${rs[1].key}`];
-    } else {
-      headline = `ธีมของเดือน: ${rs[1].key}`; lines = rs.map((x, i) => `${LBL(i)}: ${x.key}`);
-    }
-  } else {
-    const x = rs[0];
-    cards = [{ art: x.art, rev: x.rev, label: x.th + (x.rev ? ' · กลับหัว' : '') }];
-    if (S.mode === 'heart') { headline = `“${HEART[x.group][x.rev ? 1 : 0]}”`; lines = [x.key]; }
-    else { headline = x.key; lines = [x.what, `สีมงคล ${x.color} · ของนำโชค ${x.item}`]; }
-  }
-  const title = { daily: 'ดวงรายวัน', monthly: 'ดวงรายเดือน', celtic: 'ดวงชะตารวม', compat: 'ดวงสมพงษ์', bday: 'ดวงวันเกิด', heart: 'เสียงในใจ' }[S.mode] + `ของน้อง${name}`;
-  return {
-    title, cards, headline, lines, petKind: p.pet, petName: name, backdrop: interiorPortrait,
-    date: thDate(d, { day: 'numeric', month: 'long', year: 'numeric' }, todayKey()),
-    footer: /^https?:$/.test(location.protocol) && !/claude/.test(location.host) ? location.host : 'ดูดวงไพ่ยิปซีให้น้องเจ้าตัวเล็ก'
-  };
-}
-const shareName = () => `soulmysty-${S.mode}-${todayKey()}.png`;
-function shareHTML() {
-  const sh = S.share;
-  const inner = sh.busy ? `<div class="share-wait">${ICON.spark}<b>มาดามกำลังวาดรูปให้…</b></div>`
-    : sh.error ? '<div class="share-wait"><b>วาดรูปไม่สำเร็จ ลองอีกครั้งนะจ๊ะ</b></div>'
-    : `<img class="share-img" src="${sh.url}" alt="รูปคำทำนายสำหรับแชร์">
-      <div class="grid2 share-actions"><button class="btn-primary small" data-act="shareSend">${ICON.share}แชร์</button><button class="btn-outline" data-act="shareSave">${ICON.dl} บันทึกรูป</button></div>
-      <p class="note">ขนาด 1080×1920 พอดีสตอรี่ IG และ LINE</p>`;
-  return `<div class="modal share-modal" role="dialog" aria-modal="true" aria-label="แชร์ดวงเป็นรูป">
-    <button class="modal-bg" data-act="shareClose" aria-label="ปิด"></button>
-    <div class="modal-box share-box">${inner}<button class="link-btn" data-act="shareClose">ปิด</button></div>
-  </div>`;
-}
 
 /* ------------------------------------------------------------------ journal + rewards */
-function rewardsHTML() {
-  const st = D.streak, live = liveStreak(), nr = nextReward(st.days);
-  const prev = REWARDS.filter((r) => r.days <= st.days).pop();
-  const pct = nr ? Math.round((st.days - prev.days) / (nr.days - prev.days) * 100) : 100;
-  const list = REWARDS.map((r) => {
-    const ok = st.days >= r.days;
-    const pic = r.type === 'back' ? `<span class="rw-pic">${cardHTML('back', 30, r.id)}</span>`
-      : `<span class="rw-pic ico">${r.type === 'deco' ? ICON.spark : ICON.bubble}</span>`;
-    let act;
-    if (!ok) act = `<span class="rw-lock">${r.days} วัน</span>`;
-    else if (r.type === 'back') act = D.back === r.id ? '<span class="rw-on">ใช้อยู่</span>' : `<button class="rw-btn" data-act="useBack" data-arg="${r.id}">ใช้ลายนี้</button>`;
-    else if (r.type === 'deco') { const on = D.deco.includes(r.id); act = `<button class="rw-btn${on ? ' on' : ''}" data-act="toggleDeco" data-arg="${r.id}" aria-pressed="${on}">${on ? 'เปิดอยู่' : 'เปิดใช้'}</button>`; }
-    else act = `<button class="rw-btn" data-act="heart">เปิดดวง</button>`;
-    return `<div class="rw-item${ok ? '' : ' locked'}">${pic}<div class="rw-txt"><b>${r.name}</b><small>${ok ? r.desc : `ปลดล็อกเมื่อเปิดไพ่รายวันครบ ${r.days} วัน`}</small></div>${act}</div>`;
-  }).join('');
-  return `<div class="box streak-box">
-      <div class="row">${ICON.flame}<div><div class="big">${live ? `ต่อเนื่อง ${live} วัน` : 'เริ่มนับวันใหม่ได้เลย'}</div><div class="muted">ดีที่สุด ${st.best} วัน · เปิดไพ่รายวันรวม ${st.days} วัน</div></div></div>
-      ${nr ? `<div class="muted">อีก ${nr.days - st.days} วันจะได้ “${nr.name}”</div><div class="track"><div class="bar" style="width:${pct}%;background:#F0B955"></div></div>` : '<div class="muted">ปลดล็อกรางวัลครบทุกอย่างแล้ว เก่งมากจ้ะ!</div>'}
-    </div>
-    <div class="box rewards"><div class="mid">ของรางวัลจากมาดาม</div><div class="muted">นับจากวันที่เปิดไพ่รายวัน (น้องตัวไหนก็ได้) ขาดไปบางวันรางวัลก็ไม่หายนะ</div>${list}</div>`;
-}
-
-function journalHTML() {
-  const p = P();
-  const d = new Date();
-  const y = d.getFullYear(), m = d.getMonth(), today = d.getDate();
-  const first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate();
-  const marked = {};
-  p.journal.forEach((e) => { if (e.month === m && e.year === y && (e.mk === 'daily' || e.mode === 'รายวัน')) marked[e.day] = true; });
-  let cal = '';
-  for (let i = 0; i < first; i++) cal += '<span></span>';
-  for (let dd = 1; dd <= days; dd++) cal += `<span class="day${dd === today ? ' today' : ''}${marked[dd] ? ' marked' : ''}">${dd}</span>`;
-  const tabs = petTabsHTML(false);
-  return `<div class="sheet-body">
-    <button class="sheet-close" data-act="back" aria-label="ปิด">${ICON.close}</button>
-    <div class="handle"></div>
-    <div class="row between sheet-head"><h2>สมุดดวงของน้อง${esc(dname())}</h2><span class="chip pink">${p.journal.length} บันทึก</span></div>
-    ${tabs ? `<div class="pet-tabs">${tabs}</div>` : ''}
-    ${rewardsHTML()}
-    <div class="box"><div class="mid">${thDate(d, { month: 'long', year: 'numeric' }, '')}</div>
-      <div class="cal">${['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map((w) => `<b>${w}</b>`).join('')}${cal}</div></div>
-    ${p.journal.length ? p.journal.map((e) => `<div class="entry" style="background:${e.bg}"><div class="entry-cards">${e.cards.slice(0, 3).map((c, i) => `<button class="card-btn" data-act="open" data-arg="${c}" aria-label="ดูความหมาย">${face(c, 40, e.revs && e.revs[i])}</button>`).join('')}${e.cards.length > 3 ? `<span class="more">+${e.cards.length - 3}</span>` : ''}</div><div><div class="muted">${e.date} · ${e.mode}</div><div class="mid">${e.key}</div></div></div>`).join('')
-      : `<div class="empty"><svg width="84" height="64" viewBox="0 0 84 64" aria-hidden="true"><path d="M8 12 Q24 4 42 12 V58 Q24 50 8 58 Z" fill="#F7B6C4" stroke="#6B5577" stroke-width="2.5" stroke-linejoin="round"/><path d="M76 12 Q60 4 42 12 V58 Q60 50 76 58 Z" fill="#FFF6EA" stroke="#6B5577" stroke-width="2.5" stroke-linejoin="round"/></svg><b>สมุดยังว่างอยู่เลย</b><div class="body">ดูดวงเมื่อไหร่ คำทำนายจะถูกบันทึกไว้ที่นี่ให้อัตโนมัติจ้ะ</div><button class="btn-primary small" data-act="goRead">ไปหามาดามโมจิ</button></div>`}
-  </div>`;
-}
-
-function albumHTML() {
-  const TABS = [['major', 'เมเจอร์'], ['cups', 'ถ้วย'], ['wands', 'ไม้เท้า'], ['swords', 'ดาบ'], ['pentacles', 'เหรียญ']];
-  const items = (t) => t === 'major'
-    ? MAJOR.map((r) => ({ num: r[0], name: r[1], art: r[2] }))
-    : RANK_TH.map((rt, i) => ({ num: RANK_NUM[i], name: i < 10 ? (i === 0 ? 'เอซ' : rt) + SUIT_TH[t] : rt, art: t + (i + 1) }));
-  const has = (a) => D.collected.includes(a);
-  return `<div class="sheet-body">
-    <button class="sheet-close" data-act="back" aria-label="ปิด">${ICON.close}</button>
-    <div class="handle"></div>
-    <h2 class="sheet-head">อัลบั้มไพ่สะสม</h2>
-    <div class="row"><div class="track grow"><div class="bar" style="width:${Math.round(D.collected.length / 78 * 100)}%;background:#F0B955"></div></div><b class="small-b">${D.collected.length}/78</b></div>
-    <div class="muted">สะสมไพ่ได้จากดวงรายวันและรายเดือน · แตะไพ่ที่ปลดล็อกเพื่อดูความหมาย</div>
-    <div class="tabs">${TABS.map((t) => { const it = items(t[0]); return `<button class="tab${S.albumTab === t[0] ? ' sel' : ''}" data-act="tab" data-arg="${t[0]}" aria-pressed="${S.albumTab === t[0]}">${t[1]}<small>${it.filter((r) => has(r.art)).length}/${it.length}</small></button>`; }).join('')}</div>
-    <div class="album-grid">${items(S.albumTab).map((r) => has(r.art)
-      ? `<div class="album-item"><button class="card-btn opt pop" data-act="openAlbum" data-arg="${r.art}" aria-label="ดูความหมาย ${r.name}">${cardHTML(r.art, 72)}</button><span>${r.num} · ${r.name}</span></div>`
-      : `<div class="album-item locked"><div class="locked-card">${cardHTML('back', 72)}${ICON.lock}</div><span>${r.num} · ???</span></div>`).join('')}</div>
-  </div>`;
-}
-
-// Album: the card's general meaning, the same for every pet (readings stay in the reading screens)
-function meaningHTML(key) {
-  const x = INFO[key], m = MEANING[key];
-  if (!x || !m) return detailHTML(key);
-  const side = (rev) => `<div class="box stack meaning-side" style="background:${x.bg}">
-        <div class="row between"><b>${(rev ? x.rv : x.up).key}</b>${orient(rev)}</div>
-        <div>${m[rev ? 2 : 1]}</div>
-      </div>`;
-  return `<div class="modal lineIn" role="dialog" aria-modal="true" aria-label="${x.th}">
-    <button class="modal-bg" data-act="close" aria-label="ปิด"></button>
-    <div class="modal-box">
-      <div class="pop" style="transform:rotate(-2deg)">${cardHTML(key, 150)}</div>
-      <div class="center"><div class="muted">${x.en}</div><div class="big">${x.th}</div></div>
-      <div class="meaning-intro">${ICON.spark}<span>${m[0]}</span></div>
-      ${side(false)}${side(true)}
-      <p class="note meaning-note">นี่คือความหมายทั่วไปของไพ่ใบนี้จ้ะ คำทำนายสำหรับน้องจะได้ตอนเปิดไพ่ดูดวง</p>
-      <button class="btn-primary small" data-act="close">ปิด</button>
-    </div>
-  </div>`;
-}
-
-function detailHTML(key) {
-  if (!INFO[key]) return '';
-  const u = R(key, false), r = R(key, true);
-  const side = (x) => `<div class="box stack" style="background:${x.bg}">
-        <div class="row between"><b>${x.key}</b>${orient(x.rev)}</div>
-        <div>${x.what}</div><div class="soft">${x.mean}</div>
-        <div class="owner-tip"><b>คำแนะนำสำหรับเจ้าของ</b><div>${x.adv}</div></div>
-      </div>`;
-  return `<div class="modal lineIn" role="dialog" aria-modal="true" aria-label="${u.th}">
-    <button class="modal-bg" data-act="close" aria-label="ปิด"></button>
-    <div class="modal-box">
-      <div class="pop" style="transform:rotate(-2deg)">${cardHTML(key, 150)}</div>
-      <div class="center"><div class="muted">${u.en}</div><div class="big">${u.th}</div></div>
-      ${side(u)}${side(r)}
-      <button class="btn-primary small" data-act="close">ปิด</button>
-    </div>
-  </div>`;
-}
 
 /* ------------------------------------------------------------------ responsive layout */
 // The painted scene (shop + street) is drawn in a 390×844 "design space" with extra
@@ -1213,8 +764,10 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => stage.classList.remove('resizing'), 150);
 });
+initMochiMotion($('roomArt'), $('room'));
 stage.classList.add('resizing'); // first frame: place the scene without animating
 render();
+loadContent().catch(() => {}); // start fetching the inside of the shop right away
 requestAnimationFrame(() => requestAnimationFrame(() => stage.classList.remove('resizing')));
 
 // new visitors arriving from a LINE link go straight to the phone's real browser, where the
@@ -1226,3 +779,4 @@ initInstall((ev) => {
   render();
 });
 if (D.met) persistStorage();
+
