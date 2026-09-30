@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 //
 // SITE_URL (optional): the public address, e.g. SITE_URL=https://soulmysty.pages.dev npm run build
 // Link previews in LINE / Facebook need a full address for the picture.
-const SITE_URL = (process.env.SITE_URL || '').replace(/\/+$/, '');
+const SITE_URL = (process.env.SITE_URL || 'https://moonpaw-tarot.pages.dev').replace(/\/+$/, '');
 
 /** Fills %SITE_URL% in index.html and gives the service worker a new cache name each build. */
 function siteMeta() {
