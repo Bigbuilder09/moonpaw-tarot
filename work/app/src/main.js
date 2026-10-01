@@ -20,6 +20,7 @@ import { installHTML } from './views/install-ui.js';
 import { shareOpts, shareName, shareHTML } from './views/share-ui.js';
 import { journalHTML, calMonth, firstMonth } from './views/journal.js';
 import { albumHTML, meaningHTML, detailHTML } from './views/album.js';
+import { track } from './analytics.js';
 
 // repair older saves: a once-per-period reading that was opened always belongs in the album
 D.pets.forEach((p) => Object.entries(p.done).filter(([m]) => m !== 'celtic').forEach(([, r]) => (r.arts || []).forEach((a) => { if (!D.collected.includes(a)) D.collected.push(a); })));
@@ -240,7 +241,7 @@ function fillForm() {
 const ACT = {
   async install() {
     const k = installKind();
-    if (k === 'prompt') { const ok = await promptInstall(); if (ok) persistStorage(); render(); return; }
+    if (k === 'prompt') { const ok = await promptInstall(); if (ok) { persistStorage(); track('app_install'); } render(); return; }
     if (k) { S.install = k; render(); }
   },
   installClose() { S.install = null; render(); },
@@ -252,6 +253,7 @@ const ACT = {
     S.door = true; render();
     // the door animation and the shop's content load at the same time
     Promise.all([loadContent(), new Promise((ok) => later(ok, 850))])
+      .then(() => { track('enter_shop', { returning: !!D.met }); })
       .then(() => go('greet', { line: 0, lines: D.met ? greetingLines() : LINES }))
       .catch(() => { S.door = false; toast('เปิดร้านไม่สำเร็จ ลองเช็กอินเทอร์เน็ตแล้วแตะประตูอีกครั้งนะจ๊ะ'); });
   },
@@ -298,6 +300,7 @@ const ACT = {
   },
   toHub() {
     syncForm();
+    track('pet_profile_done', { pet_type: P().pet, first_time: !D.met });
     D.met = true; persist(); persistStorage(); go('hub');
   },
   reset() {
@@ -309,6 +312,7 @@ const ACT = {
   goRead() { go('mode'); },
   goJournal() {
     // opening the journal fresh starts at this month; coming back from a reading keeps the place
+    track('open_journal', { from: S.step });
     if (S.step !== 'result') { S.calY = null; S.calM = null; S.calDay = 0; }
     go('journal', { fromResult: S.step === 'result' && !S.fromJournal });
   },
@@ -328,6 +332,7 @@ const ACT = {
     const box = $('result'); if (box) box.scrollTop = 0;
   },
   goAlbum() {
+    track('open_album', { from: S.step, collected: D.collected.length });
     const first = S.step === 'result' && S.newCards[0];
     const m = first && first.match(/^(cups|wands|swords|pentacles)/);
     go('album', Object.assign({ fromResult: S.step === 'result' }, first ? { albumTab: m ? m[1] : 'major' } : {}));
@@ -335,8 +340,8 @@ const ACT = {
   daily() { choose('daily'); },
   monthly() { choose('monthly'); },
   celtic() { choose('celtic'); },
-  compat() { toast('ดวงสมพงษ์กำลังจะมาเร็ว ๆ นี้ รอติดตามนะจ๊ะ'); },
-  bday() { toast('ดวงวันเกิดกำลังจะมาเร็ว ๆ นี้ รอติดตามนะจ๊ะ'); },
+  compat() { track('coming_soon_click', { feature: 'compat' }); toast('ดวงสมพงษ์กำลังจะมาเร็ว ๆ นี้ รอติดตามนะจ๊ะ'); },
+  bday() { track('coming_soon_click', { feature: 'bday' }); toast('ดวงวันเกิดกำลังจะมาเร็ว ๆ นี้ รอติดตามนะจ๊ะ'); },
   heart() { choose('heart'); },
   pick(arg) {
     const i = Number(arg);
@@ -418,6 +423,7 @@ const ACT = {
       const { makeShareImage } = await import('./share.js'); // loaded only when someone shares
       const blob = await makeShareImage(shareOpts());
       S.share = { url: URL.createObjectURL(blob), blob };
+      track('share_image', { reading_type: S.mode });
     } catch (e) {
       S.share = { error: true };
     }
@@ -430,6 +436,7 @@ const ACT = {
     try {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: 'ร้านไพ่ SOULMYSTY', text: `ดวงของน้อง${dname()} จากร้านไพ่ SOULMYSTY` });
+        track('share_send', { method: 'share_sheet', reading_type: S.mode });
         return;
       }
     } catch (e) {
@@ -440,6 +447,7 @@ const ACT = {
   shareSave() {
     const sh = S.share;
     if (!sh || !sh.url) return;
+    track('share_send', { method: 'download', reading_type: S.mode });
     const a = document.createElement('a');
     a.href = sh.url; a.download = shareName();
     document.body.appendChild(a); a.click(); a.remove();
@@ -468,11 +476,13 @@ function choose(mode) {
   const done = doneFor(mode);
   const readingId = mode === 'celtic' ? (done ? done.key : `celtic-${p.id}-${Date.now()}`) : `${mode}-${p.id}-${pk}`;
   if (done) {
+    track('reading_view_again', { reading_type: mode, pet_type: p.pet });
     go('result', { mode, readingId, arts: done.arts.slice(), revs: (done.revs || []).slice(), repeat: true, newCards: [], newRewards: [], streakUp: 0 });
     // readings are kept in the journal automatically (older saves may have removed one)
     if (!p.journal.some((e) => e.id === readingId)) { p.journal = [makeEntry()].concat(p.journal); persist(); }
     return;
   }
+  track('reading_start', { reading_type: mode, pet_type: p.pet });
   go('shuffle', { mode, readingId, deck: shuffle(ARTS), picks: [], arts: [], revs: [], flipped: [], dealt: false, sealed: false, gen: S.gen + 1, repeat: false, newCards: [], newRewards: [], streakUp: 0 });
   later(() => { S.dealt = true; sfx.riffle(); render(); }, 380);
 }
@@ -490,6 +500,7 @@ function completeReading() {
   S.newCards = fresh;
   S.streakUp = S.mode === 'daily' && markDay() ? D.streak.count : 0;
   S.newRewards = newlyUnlocked();
+  track('reading_complete', { reading_type: S.mode, pet_type: p.pet, new_cards: fresh.length, collected: D.collected.length, streak: D.streak.count });
   if (!p.journal.some((e) => e.id === entryId())) p.journal = [makeEntry()].concat(p.journal);
   persist();
 }
