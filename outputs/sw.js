@@ -1,6 +1,6 @@
 // SOULMYSTY offline support: the shop opens even without internet once it has been visited.
 // CACHE gets a fresh name on every build (see vite.config.js), so installed copies drop old files by themselves.
-const CACHE = 'soulmysty-20260930033832';
+const CACHE = 'soulmysty-20261001050854';
 const CORE = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

@@ -6,9 +6,9 @@ import { resolve } from 'node:path';
 // `npm run build`         → normal static site in dist-site/ (deploy this one: Cloudflare Pages, Netlify, Vercel…)
 // `npm run build:single`  → one self-contained dist/index.html (easy to share / embed)
 //
-// SITE_URL (optional): the public address, e.g. SITE_URL=https://soulmysty.pages.dev npm run build
+// SITE_URL (optional): the public address, e.g. SITE_URL=https://soulmysty.com npm run build
 // Link previews in LINE / Facebook need a full address for the picture.
-const SITE_URL = (process.env.SITE_URL || 'https://moonpaw-tarot.pages.dev').replace(/\/+$/, '');
+const SITE_URL = (process.env.SITE_URL || 'https://soulmysty.com').replace(/\/+$/, '');
 
 /** Fills %SITE_URL% in index.html and gives the service worker a new cache name each build. */
 function siteMeta() {
